@@ -1,18 +1,20 @@
+# DrinkFlow API
+
 DrinkFlow API — асинхронный REST API для управления напитками, фабриками, складами и заказами.
 
-Пользователь может регистрироваться, просматривать напитки, создавать заказы.
-Менеджер может менять статусы заказов.
+Пользователь может регистрироваться, просматривать напитки, создавать заказы.  
+Менеджер может менять статусы заказов.  
 Админ может управлять напитками, фабриками, складами и пользователями.
 
+## Стек
 
-Стек:
-Python 3.13
-FastAPI
-SQLAlchemy
-PostgreSQL
-Alembic
-Redis
-RabbitMQ
-Docker
-Pytest
-GitHub Actions CI/CD
+- Python 3.13
+- FastAPI
+- SQLAlchemy
+- PostgreSQL
+- Alembic
+- Redis
+- RabbitMQ
+- Docker
+- Pytest
+- GitHub Actions CI/CD
