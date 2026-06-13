@@ -1,4 +1,6 @@
 from sqlalchemy import Integer, String, ForeignKey, Boolean
+from drinks import Drink
+from typing import List
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
@@ -11,4 +13,4 @@ class Factory(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     location: Mapped[str] = mapped_column(String(100), nullable=False)
     
-    ... #relationships
+    drinks: Mapped[List["Drink"]] = relationship(back_populates="factory")

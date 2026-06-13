@@ -5,10 +5,10 @@ class Base(DeclarativeBase):
     pass
 
 class Order(Base):
-    __table_name__ = "orders"
+    __tablename__ = "orders"
     ...
 
 
 class OrderItem(Base):
-    __table_name__ = "order_items"
+    __tablename__ = "order_items"
     ...
