@@ -2,6 +2,7 @@ from sqlalchemy import Integer, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column, UniqueConstraint
 from typing import List
 from factories import Factory
+from orders import OrderItem
 from stock import Stock
 
 class Base(DeclarativeBase):
@@ -18,3 +19,4 @@ class Drink(Base):
 
     factory: Mapped["Factory"] = relationship(back_populates="drinks")
     stock: Mapped[List["Stock"]] = relationship(back_populates="drink")
+    items = Mapped["OrderItem"] = relationship(back_populates="drinks")

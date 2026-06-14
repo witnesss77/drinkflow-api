@@ -1,6 +1,9 @@
 from sqlalchemy import Integer, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
 from sqlalchemy_utils import EmailType
+from orders import Order
+from typing import List
+
 
 class Base(DeclarativeBase):
     pass
@@ -12,3 +15,5 @@ class User(Base):
     email: Mapped[str] = mapped_column(EmailType)
     hashed_password: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(20))
+
+    orders: Mapped[List["Order"]] = relationship(back_populates="user")
