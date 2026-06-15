@@ -71,6 +71,7 @@ class Order(Base):
 class OrderItem(Base):
     __tablename__ = "order_items"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id"), nullable=False)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     drink_id: Mapped[int] = mapped_column(Integer, ForeignKey("drinks.id"), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -87,4 +88,4 @@ class Warehouse(Base):
     address: Mapped[str] = mapped_column(String(100))
 
     stocks: Mapped[List["Stock"]] = relationship(back_populates="warehouse")
-    orders: Mapped[List["Order"]] = relationship(back_populates="orders")
+    orders: Mapped[List["Order"]] = relationship(back_populates="warehouse")

@@ -1,3 +1,4 @@
 .env
 /venv
 cfg.py
+__pycache__
