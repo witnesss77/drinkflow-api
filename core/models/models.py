@@ -34,7 +34,7 @@ class Factory(Base):
 class Stock(Base):
     __tablename__ = "stocks"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    drink_id :Mapped[int] = mapped_column(Integer, ForeignKey("drinks.id"), nullable = False)
+    drink_id: Mapped[int] = mapped_column(Integer, ForeignKey("drinks.id"), nullable = False)
     warehouse_id: Mapped[int] = mapped_column(Integer, ForeignKey("warehouses.id"), nullable = False)
     quantity: Mapped[int] = mapped_column(Integer)
     reserved_quantity: Mapped[int] = mapped_column(Integer)
