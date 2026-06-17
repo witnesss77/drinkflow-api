@@ -20,7 +20,7 @@ async def create_factory(request: CreateFactory, db = Depends(get_session)):
         name = request.name,
         location = request.location
     )
-    
+
     try:
         db.add(factory)
         await db.commit()
@@ -66,7 +66,7 @@ async def delete_factory(factory_id, db = Depends(get_session)):
     if factory is None:
         raise HTTPException(
             status_code=404,
-            detail="Drink doesnt exist"
+            detail="Factory doesnt exist"
         )
     
     await db.delete(factory)
