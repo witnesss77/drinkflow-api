@@ -1,7 +1,4 @@
 from pydantic import BaseModel, Field, EmailStr
-#дописать где необязательные поля после аннотации none = none
-
-
 
 
 class CreateDrink(BaseModel):
