@@ -31,14 +31,12 @@ class CreateStock(BaseModel):
     drink_id: int = Field(...)
     warehouse_id: int = Field(...)
     quantity: int = Field(..., gt=0)
-    reserved_quantity: int = Field(...)
+    reserved_quantity: int = Field(..., ge=0)
 
 
 class UpdateStock(BaseModel):
-    drink_id: int | None = None
-    warehouse_id: int | None = None
-    quantity: int | None = None
-    reserved_quantity: int | None = None
+    quantity: int | None = Field(None, ge = 0)
+    reserved_quantity: int | None = Field(None, ge = 0)
 
 
 class CreateOrder(BaseModel):
