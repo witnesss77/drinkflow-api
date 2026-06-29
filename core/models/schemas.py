@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, EmailStr
-
+from enum import Enum
 
 class CreateDrink(BaseModel):
     name: str
@@ -66,20 +66,33 @@ class UpdateOrderItem(BaseModel):
     price_per_item: int | None = None
 
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class RoleEnum(str, Enum):
+    admin = 'admin'
+    user = 'user'
+
+
 class CreateUser(BaseModel):
     name: str = Field(...)
     email:  EmailStr = Field(...)
     password: str = Field(..., min_length=8)
-    role: str = Field(...)
+    role: RoleEnum
+
 
 class UpdateUser(BaseModel):
     name: str | None = None
-    email: str = EmailStr()
-    role: str 
+    email: EmailStr | None = None
+    role: RoleEnum
+
 
 class CreateWarehouse(BaseModel):
     name: str = Field(...)
     address: str = Field(...)
+
 
 class UpdateWarehouse(BaseModel):
     name: str | None = None
