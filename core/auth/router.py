@@ -14,14 +14,16 @@ def get_token(db = Depends(get_session)):
     ...
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-def create_user(request: CreateUser, db = Depends(get_session)):
+async def create_user(request: CreateUser, db = Depends(get_session)):
     salt = bcrypt.gensalt()
+    pw = request.password
+    encrypted = pw.encode('utf-8')
     user = User(
         name = request.name,
         email = request.email,
-        hashed_password = bcrypt.hashpw(request.password, salt),
+        hashed_password = bcrypt.hashpw(encrypted, salt).decode('utf-8'),
         role = request.role
     )
 
     db.add(user)
-    db.commit()
+    await db.commit()
