@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import EmailStr
 from typing import Annotated
 from sqlalchemy import select
-from cfg import algorithms, secret_key
+from cfg import algorithms, secret_key, access_token_expire_minutes
 from models.models import User
 from datetime import datetime, timedelta, timezone
 import bcrypt
@@ -11,18 +11,19 @@ from passlib.context import CryptContext
 from models.schemas import CreateUser, Token
 from models.database import get_session
 import jwt
+from jwt.exceptions import InvalidTokenError
 
 
 router = APIRouter(prefix='/auth')
 
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 password_context = CryptContext(schemes=['bcrypt'], deprecated = 'auto')
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl='/auth/token')
 
 
 async def authenticate_user(request_username: str , request_password: str, db = Depends(get_session)):
     query = select(User).where(User.name == request_username)
-    result = db.execute(query)
+    result = await db.execute(query)
     user = result.scalar_one_or_none()
 
     if user is None:
@@ -38,24 +39,23 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=int(access_token_expire_minutes))
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=algorithms)
     return encoded_jwt
 
-@router.post("/token")
+@router.post("/get_token")
 async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db = Depends(get_session)) -> Token:
-    user = authenticate_user(form_data.username, form_data.password, db)
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db = Depends(get_session)):
+    user = await authenticate_user(form_data.username, form_data.password, db) 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.name}, expires_delta=access_token_expires)
+    access_token_expires = timedelta(minutes=int(access_token_expire_minutes))
+    access_token = create_access_token(data={"sub": user.email, "id": user.id}, expires_delta=access_token_expires)
     return Token(access_token=access_token, token_type="bearer")
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -73,3 +73,17 @@ async def create_user(request: CreateUser, db = Depends(get_session)):
     db.add(user)
     await db.commit()
 
+def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
+    payload = jwt.decode(token, key = secret_key, algorithms=[algorithms])
+    username: str = payload.get('sub')
+    user_id: str = payload.get('id')
+    try:
+        if username is None or user_id is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        return {'username': username, 'id': user_id}
+    except InvalidTokenError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+@router.post("/token")
+def get_me(token):
+    return get_current_user(token)
