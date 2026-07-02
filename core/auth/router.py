@@ -88,16 +88,52 @@ async def create_user(request: CreateUser, db = Depends(get_session)):
 
 def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     payload = jwt.decode(token, key = secret_key, algorithms=[algorithms])
-    username: str = payload.get('sub')
-    user_id: str = payload.get('id')
-    try:
-        if username is None or user_id is None:
+    if payload.get("type") == "access_token":
+        username: str = payload.get('sub')
+        user_id: str = payload.get('id')
+        try:
+            if username is None or user_id is None:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+            return {'username': username, 'id': user_id}
+        except InvalidTokenError:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-        return {'username': username, 'id': user_id}
-    except InvalidTokenError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    
+    else:
+        return "invalid token type"
+
+
+@router.get("/me")
+async def protected_route(user = Depends(get_current_user)):
+    return user
 
 @router.post("/refresh")
-def get_refresh_token(token):
-    return ...
+async def refresh_access_token(refresh_token: str, db = Depends(get_session)):
+    payload = jwt.decode(refresh_token, key = secret_key, algorithms=[algorithms])
+    try:
+        payload.get("type") == "refresh_token"
+        user_id = payload.get("sub")
+
+        query = select(User).where(User.id == user_id)
+        result = db.execute(query)
+        user_obj = result.scalar_one_or_none()
+
+        if user_obj is None:
+            raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+        access_token_expires = timedelta(minutes=int(access_token_expire_minutes))
+        access_token = create_jwt(
+        token_type = "access_token", data={"sub": user_obj.email, "id": user_obj.id}, 
+        expires_delta=access_token_expires)
+
+        return {
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+    
+    except InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token"
+        )
