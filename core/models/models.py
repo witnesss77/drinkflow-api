@@ -56,6 +56,8 @@ class User(Base):
 
     orders: Mapped[List["Order"]] = relationship(back_populates="user")
 
+    __table_args__ = (UniqueConstraint("email", name = "uq_email"),)
+
 class Order(Base):
     __tablename__ = "orders"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
