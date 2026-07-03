@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import EmailStr
 from typing import Annotated
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from cfg import algorithms, secret_key, access_token_expire_minutes, refresh_token_expire_minutes
 from models.models import User
 from datetime import datetime, timedelta, timezone
@@ -82,10 +82,15 @@ async def create_user(request: CreateUser, db = Depends(get_session)):
         hashed_password = bcrypt.hashpw(encrypted, salt).decode('utf-8'),
         role = request.role
     )
-
-    db.add(user)
-    await db.commit()
-
+    try:
+        db.add(user)
+        await db.commit()
+    except IntegrityError:
+        return HTTPException(
+            status_code=409,
+            detail = "Email already exists in the system"
+        )
+    
 def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     payload = jwt.decode(token, key = secret_key, algorithms=[algorithms])
     if payload.get("type") == "access_token":
