@@ -76,7 +76,7 @@ async def delete_order(order_id, db = Depends(get_session)):
 
 @router.get("/order_items")
 async def get_items(db = Depends(get_session)):
-    query = select(OrderItem).order_by(Order.id)
+    query = select(OrderItem).order_by(OrderItem.id)
     result = await db.execute(query)
     return result.scalars().all()
 
