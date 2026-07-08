@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from models.schemas import CreateOrder, UpdateOrder, CreateOrderItem, UpdateOrderItem
 from sqlalchemy import select
 from models.models import Order, OrderItem
+from service.order import OrderService
 
 router = APIRouter(prefix = "/orders")
 
@@ -80,27 +81,9 @@ async def get_items(db = Depends(get_session)):
     result = await db.execute(query)
     return result.scalars().all()
 
-@router.post("/order_items", status_code = status.HTTP_201_CREATED)
-async def set_items(request: CreateOrderItem, db = Depends(get_session)):
-    item = OrderItem(
-        order_id = request.order_id,
-        user_id = request.user_id,
-        drink_id = request.drink_id,
-        quantity = request.quantity,
-        price_per_item = request.price_per_item
-    )
-
-    try:
-        db.add(item)
-        await db.commit()
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail="Order item already exists or unique constraint violated"
-        )
-    
-    return {"status": status.HTTP_201_CREATED, "message": "Order item created successfully"}
+@router.post("/order_items")
+async def set_items(warehouse_id: int, request: CreateOrderItem, db = Depends(get_session)):
+    return await OrderService.add_order_item(request, warehouse_id, db)
 
 @router.patch("/order_items/{item_id:int}")
 async def update_items(item_id, request: UpdateOrderItem, db = Depends(get_session)):
