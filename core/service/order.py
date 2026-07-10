@@ -49,6 +49,32 @@ class OrderService:
 
         db.add(new_item)
         await db.commit()
-        await db.refresh(new_item)
         return new_item
-        
+    
+
+    async def cancel_order(order_id, db):
+        query = select(Order).where(Order.id == order_id)
+        result = await db.execute(query)
+        order = result.scalar_one_or_none()
+
+        if order is None:
+            raise HTTPException(status_code=409, detail="order doesn't exist")
+
+        query = select(OrderItem).where(OrderItem.order_id == order_id)
+        res = await db.execute(query)
+        items = res.scalars().all()
+            
+        for item in items:
+            query = select(Stock).where(item.drink_id == Stock.drink_id)
+            res = await db.execute(query)
+            stock = res.scalar_one_or_none()
+            if stock.drink_id == item.drink_id:
+            #1 - вернуть в колво стока колво указанное в заказе
+                stock.reserved_quantity -= item.quantity
+                stock.quantity += item.quantity
+            #2 - удалить ордер айтем
+                await db.delete(item)
+
+        order.status = "cancelled"
+        await db.commit()
+        return "done"

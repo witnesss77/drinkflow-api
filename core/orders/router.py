@@ -61,19 +61,20 @@ async def update_order(order_id, request: UpdateOrder, db = Depends(get_session)
     
 @router.delete("/{order_id:int}")
 async def delete_order(order_id, db = Depends(get_session)):
-    query = select(Order).where(Order.id == order_id)
-    result = await db.execute(query)
-    order = result.scalar_one_or_none()
+    return await OrderService.cancel_order(order_id, db)
+    # query = select(Order).where(Order.id == order_id)
+    # result = await db.execute(query)
+    # order = result.scalar_one_or_none()
 
-    if order is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Order doesnt exist"
-        )
+    # if order is None:
+    #     raise HTTPException(
+    #         status_code=404,
+    #         detail="Order doesnt exist"
+    #     )
     
-    await db.delete(order)
-    await db.commit()
-    return {"status": status.HTTP_200_OK, "message": "Order deleted successfully"}
+    # await db.delete(order)
+    # await db.commit()
+    # return {"status": status.HTTP_200_OK, "message": "Order deleted successfully"}
 
 @router.get("/order_items")
 async def get_items(db = Depends(get_session)):

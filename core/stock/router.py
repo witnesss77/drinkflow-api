@@ -62,7 +62,7 @@ async def update_stock(stock_id: int, request: UpdateStock, db = Depends(get_ses
         raise HTTPException(status_code=400, detail="Database error")
     
 @router.delete("/{stock_id:int}")
-async def delete_stock(stock_id, db = Depends(get_session)):
+async def delete_stock(stock_id: int, db = Depends(get_session)):
     query = select(Stock).where(Stock.id == stock_id)
     result = await db.execute(query)
     stock = result.scalar_one_or_none()
