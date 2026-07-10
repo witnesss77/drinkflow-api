@@ -42,8 +42,6 @@ class UpdateStock(BaseModel):
 class CreateOrder(BaseModel):
     user_id: int = Field(...)
     warehouse_id: int = Field(...)
-    status: str = Field(...)
-    is_paid: bool = Field(...)
 
 
 class UpdateOrder(BaseModel):

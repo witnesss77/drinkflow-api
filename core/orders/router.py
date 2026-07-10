@@ -19,8 +19,8 @@ async def set_orders(request: CreateOrder, db = Depends(get_session)):
     order = Order(
         user_id = request.user_id,
         warehouse_id = request.warehouse_id,
-        status = request.status,
-        is_paid = request.is_paid
+        status = "created",
+        is_paid = False
     )
 
     try:
@@ -35,11 +35,14 @@ async def set_orders(request: CreateOrder, db = Depends(get_session)):
     
     return {"status": status.HTTP_201_CREATED, "message": "Order created successfully"}
 
-@router.patch("/{order_id:int}")
-async def update_order(order_id, request: UpdateOrder, db = Depends(get_session)):
+@router.patch("/{order_id:int}/payment")
+async def update_order(order_id, db = Depends(get_session)):
     query = select(Order).where(Order.id == order_id)
     result = await db.execute(query)
     order = result.scalar_one_or_none()
+    query2 = select(OrderItem).where(OrderItem.order_id == order.id)
+    result2 = await db.execute(query2)
+    items = result2.scalars().all()
 
     if order is None:
         raise HTTPException(
@@ -47,34 +50,36 @@ async def update_order(order_id, request: UpdateOrder, db = Depends(get_session)
             detail="Order not found"
         )
     
-    for k, v in request.model_dump(exclude_unset=True).items():
-        setattr(order, k, v)
-
-    try:
-        await db.commit()
-        await db.refresh(order)
-        return order
+    if items is None:
+        raise HTTPException(status_code=409, detail="order is empty")
     
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Database error")
+    if order.is_paid == True or order.status == "paid":
+        raise HTTPException(status_code=409, detail="order is already paid")
+    
+    order.is_paid = True
+    order.status = "paid"
+
+    await db.commit()
+    await db.refresh(order)
+    return order
+
+
+    # for k, v in request.model_dump(exclude_unset=True).items():
+    #     setattr(order, k, v)
+
+    # try:
+    #     await db.commit()
+    #     await db.refresh(order)
+    #     return order
+    
+    # except IntegrityError:
+    #     await db.rollback()
+    #     raise HTTPException(status_code=400, detail="Database error")
     
 @router.delete("/{order_id:int}")
 async def delete_order(order_id, db = Depends(get_session)):
     return await OrderService.cancel_order(order_id, db)
-    # query = select(Order).where(Order.id == order_id)
-    # result = await db.execute(query)
-    # order = result.scalar_one_or_none()
-
-    # if order is None:
-    #     raise HTTPException(
-    #         status_code=404,
-    #         detail="Order doesnt exist"
-    #     )
     
-    # await db.delete(order)
-    # await db.commit()
-    # return {"status": status.HTTP_200_OK, "message": "Order deleted successfully"}
 
 @router.get("/order_items")
 async def get_items(db = Depends(get_session)):
