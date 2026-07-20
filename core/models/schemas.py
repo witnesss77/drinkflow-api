@@ -50,6 +50,10 @@ class UpdateOrder(BaseModel):
     status: str | None = None 
     is_paid: bool | None = None
 
+class UpdateOrderStatus(BaseModel):
+    status: str | None = None,
+    is_paid: bool | None = None
+
 
 class CreateOrderItem(BaseModel):
     order_id: int = Field(...)
@@ -73,6 +77,7 @@ class Token(BaseModel):
 class RoleEnum(str, Enum):
     admin = 'admin'
     user = 'user'
+    manager = 'manager'
 
 
 class CreateUser(BaseModel):
