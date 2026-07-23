@@ -78,3 +78,49 @@ class OrderService:
         order.status = "cancelled"
         await db.commit()
         return "done"
+    
+    async def remove_item(item_id, db):
+        query = select(OrderItem).where(OrderItem.id == item_id)
+        result = await db.execute(query)
+        item = result.scalar_one_or_none()
+
+        if item is None:
+            raise HTTPException(status_code=409, detail="orderitem doesn't exist")
+        
+        query = select(Stock).where(item.drink_id == Stock.drink_id)
+        res = await db.execute(query)
+        stock = res.scalar_one_or_none()
+
+        stock.reserved_quantity -= item.quantity
+        stock.quantity += item.quantity
+        await db.delete(item)
+        await db.commit()
+        return "done"
+    
+    async def change_quantity(item_id, request, db):
+        query = select(OrderItem).where(OrderItem.id == item_id)
+        result = await db.execute(query)
+        item = result.scalar_one_or_none()
+
+        query = select(Stock).where(item.drink_id == Stock.drink_id)
+        res = await db.execute(query)
+        stock = res.scalar_one_or_none()
+
+        old_quantity = item.quantity
+        new_quantity = request.quantity
+
+        delta = new_quantity - old_quantity
+
+        if delta > stock.quantity:
+            raise HTTPException(status_code=409, detail="not enough in stock")
+
+        stock.quantity -= delta
+        stock.reserved_quantity += delta
+
+        item.quantity = new_quantity
+        item.price_per_item = request.price_per_item
+
+        await db.commit()
+        await db.refresh(item)
+
+        return item

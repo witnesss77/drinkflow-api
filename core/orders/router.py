@@ -3,7 +3,7 @@ from models.database import get_session
 from sqlalchemy.exc import IntegrityError
 from models.schemas import CreateOrder, UpdateOrder, CreateOrderItem, UpdateOrderItem, UpdateOrderStatus
 from sqlalchemy import select
-from models.models import Order, OrderItem, User
+from models.models import Order, OrderItem, User, Stock
 from service.order import OrderService
 from auth.router import get_current_user
 
@@ -109,34 +109,21 @@ async def set_items(warehouse_id: int, request: CreateOrderItem, db = Depends(ge
     return await OrderService.add_order_item(request, warehouse_id, db)
 
 
+@router.patch("/order_items/{item_id:int}")
+async def update_items(item_id, request: UpdateOrderItem, db = Depends(get_session)):
+    query = select(OrderItem).where(OrderItem.id == item_id)
+    result = await db.execute(query)
+    item = result.scalar_one_or_none()
 
-# пофиксить выборку по изменению существующих order items
-# @router.patch("/order_items/{item_id:int}")
-# async def update_items(item_id, request: UpdateOrderItem, db = Depends(get_session)):
-#     query = select(OrderItem).where(OrderItem.id == item_id)
-#     result = await db.execute(query)
-#     item = result.scalar_one_or_none()
+    if item is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Item not found"
+            )
 
-#     stock = select(Stock).where()
+    await OrderService.change_quantity(item_id, request, db)
 
-#     if item is None:
-#         raise HTTPException(
-#             status_code=404,
-#             detail="Item not found"
-#         )
-    
-#     for k, v in request.model_dump(exclude_unset=True).items():
-#         setattr(item, k, v)
 
-#     try:
-#         await db.commit()
-#         await db.refresh(item)
-#         return item
-    
-#     except IntegrityError:
-#         await db.rollback()
-#         raise HTTPException(status_code=400, detail="Database error")
-    
 @router.delete("/order_items/{item_id:int}")
 async def delete_item(item_id, db = Depends(get_session)):
     query = select(OrderItem).where(OrderItem.id == item_id)
