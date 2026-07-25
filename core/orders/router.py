@@ -10,10 +10,16 @@ from auth.router import get_current_user
 router = APIRouter(prefix = "/orders")
 
 @router.get("")
-async def get_orders(db = Depends(get_session)):
-    query = select(Order)
-    result = await db.execute(query)
-    return result.scalars().all()
+async def get_orders(page: int | None = None, db = Depends(get_session)):
+    if page:
+        items_offset = (page - 1) * 10
+        query = select(Order)
+        result = await db.execute(query).offset(items_offset).limit(10)
+        return result.scalars().all()
+    else:
+        query = select(Order)
+        result = await db.execute(query)
+        return result.scalars().all()
 
 @router.post("", status_code = status.HTTP_201_CREATED)
 async def set_orders(request: CreateOrder, db = Depends(get_session)):

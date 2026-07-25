@@ -8,10 +8,17 @@ from models.models import Drink
 router = APIRouter(prefix="/drinks")
 
 @router.get("")
-async def get_items(db = Depends(get_session)):
-    query = select(Drink)
-    result = await db.execute(query)
-    return result.scalars().all()
+async def get_items(page: int | None = None, db = Depends(get_session)):
+    if page:
+        items_offset =  (page - 1) * 10
+
+        query = select(Drink).offset(items_offset).limit(10)
+        result = await db.execute(query)
+        return result.scalars().all()
+    else:
+        query = select(Drink)
+        result = await db.execute(query)
+        return result.scalars().all()
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def set_items(request: CreateDrink, db = Depends(get_session)):
