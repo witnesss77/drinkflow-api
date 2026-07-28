@@ -8,11 +8,32 @@ from models.models import Drink
 router = APIRouter(prefix="/drinks")
 
 @router.get("")
-async def get_items(page: int | None = None, db = Depends(get_session)):
+async def get_items(
+    page: int | None = None,
+    name: str | None = None,
+    desc: str | None = None,
+    alcoholic: bool | None = None,
+    price: int | None = None,
+    factory_id: int | None = None,
+    db = Depends(get_session)):
+    query = select(Drink)
+
+    if name:
+        query = query.where(Drink.name == name)
+    if desc:
+        query = query.where(Drink.desc == desc)
+    if alcoholic:
+        query = query.where(Drink.alcoholic == alcoholic)
+    if price:
+        query = query.where(Drink.price == price)
+    if factory_id:
+        query = query.where(Drink.factory_id == factory_id)
+    
     if page:
         items_offset =  (page - 1) * 10
-
-        query = select(Drink).offset(items_offset).limit(10)
+        query = query.offset(items_offset).limit(10)
+        if query is None:
+            query = select(Drink).offset(items_offset).limit(10)
         result = await db.execute(query)
         return result.scalars().all()
     else:

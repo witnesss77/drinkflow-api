@@ -10,11 +10,31 @@ from auth.router import get_current_user
 router = APIRouter(prefix = "/orders")
 
 @router.get("")
-async def get_orders(page: int | None = None, db = Depends(get_session)):
+async def get_orders(
+    page: int | None = None,
+    user_id: int | None = None,
+    warehouse_id: int | None = None,
+    status: str | None = None,
+    is_paid: bool | None = None,
+    db = Depends(get_session)):
+
+    query = select(Order)
+
+    if user_id:
+        query = query.where(Order.user_id == user_id)
+    if warehouse_id:
+        query = query.where(Order.warehouse_id == user_id)
+    if status:
+        query = query.where(Order.status == status)
+    if is_paid:
+        query = query.where(Order.is_paid == is_paid)
+        
     if page:
         items_offset = (page - 1) * 10
-        query = select(Order)
-        result = await db.execute(query).offset(items_offset).limit(10)
+        query = query.offset(items_offset).limit(10)
+        if query is None:
+            query = select(Order).offset(items_offset).limit(10)
+        result = await db.execute(query)
         return result.scalars().all()
     else:
         query = select(Order)
@@ -72,7 +92,7 @@ async def update_order(order_id, db = Depends(get_session)):
 
 @router.patch("/{order_id:int}/change_status")
 async def update_order_status(request : UpdateOrderStatus, order_id, db = Depends(get_session), requested_user = Depends(get_current_user)):
-    user_ = select(User).where(User.id == requested_user['id']).filter(User.role == "manager" or User.role == "admin")
+    user_ = select(User).where(User.id == requested_user['id']).where(User.role == "manager" or User.role == "admin")
     if user_ is None:
         return 'invalid user or role not allowed'
     
@@ -105,8 +125,27 @@ async def delete_order(order_id, db = Depends(get_session)):
     
 
 @router.get("/order_items")
-async def get_items(db = Depends(get_session)):
-    query = select(OrderItem).order_by(OrderItem.id)
+async def get_items(
+    order_id: int | None = None,
+    user_id: int | None = None,
+    drink_id: int | None = None,
+    quantity: int | None = None,
+    pricier: int | None = None,
+    db = Depends(get_session)):
+    query = select(OrderItem)
+
+    if order_id:
+        query.where(OrderItem.order_id == order_id)
+    if user_id:
+        query.where(OrderItem.user_id == user_id)
+    if drink_id:
+        query.where(OrderItem.drink_id == drink_id)
+    if quantity:
+        query.where(OrderItem.quantity == quantity)
+    if pricier:
+        query.where(OrderItem.price_per_item < pricier)
+
+    query = query.order_by(OrderItem.id)
     result = await db.execute(query)
     return result.scalars().all()
 
