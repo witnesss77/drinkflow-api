@@ -15,7 +15,7 @@ class OrderService:
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
         
-        query = select(Order).where(Order.id == request.order_id)
+        query = select(Order).where(Order.id == request.order_id, Order.user_id == request.user_id)
         result = await db.execute(query)
         order = result.scalar_one_or_none()
 
@@ -25,13 +25,13 @@ class OrderService:
         stock_query = select(Stock).where(
             Stock.warehouse_id == warehouse_id,
             Stock.drink_id == request.drink_id
-        )
+        ).with_for_update()
 
         result = await db.execute(stock_query)
         stock = result.scalar_one_or_none()
 
         if stock is None:
-            raise HTTPException(status_code=404, detail="Stock not found")
+            raise HTTPException(status_code=404, detail="Stock not found or in use right now")
 
         if request.quantity > stock.quantity:
             raise HTTPException(status_code=409, detail="too much items")
