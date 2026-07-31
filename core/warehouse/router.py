@@ -1,9 +1,9 @@
 from fastapi import APIRouter, status, HTTPException, Depends
-from models.database import get_session
+from core.models.database import get_session
 from sqlalchemy.exc import IntegrityError
-from models.schemas import CreateWarehouse, UpdateWarehouse
+from core.models.schemas import CreateWarehouse, UpdateWarehouse
 from sqlalchemy import select
-from models.models import Warehouse
+from core.models.models import Warehouse
 
 router = APIRouter(prefix = "/warehouses")
 

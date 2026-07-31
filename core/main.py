@@ -1,10 +1,10 @@
 from fastapi import FastAPI
-from drinks.router import router as drinks_router
-from factories.router import router as factories_router
-from warehouse.router import router as warehouses_router
-from stock.router import router as stocks_router
-from orders.router import router as orders_router
-from auth.router import router as auth_router
+from core.drinks.router import router as drinks_router
+from core.factories.router import router as factories_router
+from core.warehouse.router import router as warehouses_router
+from core.stock.router import router as stocks_router
+from core.orders.router import router as orders_router
+from core.auth.router import router as auth_router
 
 app = FastAPI()
 

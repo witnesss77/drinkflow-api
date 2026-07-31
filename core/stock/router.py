@@ -1,9 +1,9 @@
 from fastapi import APIRouter, status, HTTPException, Depends
-from models.database import get_session
+from core.models.database import get_session
 from sqlalchemy.exc import IntegrityError
-from models.schemas import CreateStock, UpdateStock
+from core.models.schemas import CreateStock, UpdateStock
 from sqlalchemy import select
-from models.models import Stock
+from core.models.models import Stock
 
 router = APIRouter(prefix="/stocks")
 

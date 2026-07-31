@@ -1,9 +1,9 @@
 from fastapi import APIRouter, status, HTTPException, Depends
-from models.database import get_session
+from core.models.database import get_session
 from sqlalchemy.exc import IntegrityError
-from models.schemas import CreateFactory, UpdateFactory
+from core.models.schemas import CreateFactory, UpdateFactory
 from sqlalchemy import select
-from models.models import Factory
+from core.models.models import Factory
 
 router = APIRouter(prefix = "/factories")
 

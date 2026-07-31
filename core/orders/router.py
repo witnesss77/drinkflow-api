@@ -1,11 +1,11 @@
 from fastapi import APIRouter, status, HTTPException, Depends
-from models.database import get_session
+from core.models.database import get_session
 from sqlalchemy.exc import IntegrityError
-from models.schemas import CreateOrder, UpdateOrder, CreateOrderItem, UpdateOrderItem, UpdateOrderStatus
+from core.models.schemas import CreateOrder,CreateOrderItem, UpdateOrderItem, UpdateOrderStatus
 from sqlalchemy import select
-from models.models import Order, OrderItem, User, Stock
-from service.order import OrderService
-from auth.router import get_current_user
+from core.models.models import Order, OrderItem, User, Stock
+from core.service.order import OrderService
+from core.auth.router import get_current_user
 
 router = APIRouter(prefix = "/orders")
 

@@ -3,13 +3,13 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from typing import Annotated
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from cfg import algorithms, secret_key, access_token_expire_minutes, refresh_token_expire_minutes
-from models.models import User
+from core.cfg import algorithms, secret_key, access_token_expire_minutes, refresh_token_expire_minutes
+from core.models.models import User
 from datetime import datetime, timedelta, timezone
 import bcrypt
 from passlib.context import CryptContext
-from models.schemas import CreateUser, Token
-from models.database import get_session
+from core.models.schemas import CreateUser, Token
+from core.models.database import get_session
 import jwt
 from jwt.exceptions import InvalidTokenError
 

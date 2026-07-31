@@ -1,5 +1,5 @@
 from sqlalchemy.orm import sessionmaker
-import cfg 
+from core import cfg
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 database_url = cfg.db_str

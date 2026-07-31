@@ -1,8 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, Depends
-from models.models import User, Stock, Warehouse, Order, OrderItem
-from models.database import get_session
+from core.models.models import User, Stock, Warehouse, Order, OrderItem
+from core.models.database import get_session
 
 
 
