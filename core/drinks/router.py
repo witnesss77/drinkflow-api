@@ -30,6 +30,8 @@ async def get_items(
         query = query.where(Drink.factory_id == factory_id)
     
     if page:
+        if page < 0: 
+            raise HTTPException(status_code=409, detail="Invalid page")
         items_offset =  (page - 1) * 10
         query = query.offset(items_offset).limit(10)
         if query is None:
