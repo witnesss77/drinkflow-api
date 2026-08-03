@@ -10,11 +10,11 @@ class CreateDrink(BaseModel):
 
 
 class UpdateDrink(BaseModel):
-    name: str | None = Field(...)
+    name: str | None = None
     desc: str | None = None
-    alcoholic: bool | None = Field()
-    price: int = Field(..., gt=0)
-    factory_id: int = Field(..., gt=0)
+    alcoholic: bool | None = None
+    price: int | None = None
+    factory_id: int | None = None
 
 
 class CreateFactory(BaseModel):

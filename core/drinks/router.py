@@ -43,6 +43,19 @@ async def get_items(
         result = await db.execute(query)
         return result.scalars().all()
 
+@router.get("/{drink_id:int}")
+async def get_item(drink_id: int, db = Depends(get_session)):
+    query = select(Drink).where(Drink.id == drink_id)
+    res = await db.execute(query)
+    result = res.scalar_one_or_none()
+
+    if result is None:
+        raise HTTPException(
+                    status_code=404,
+                    detail="Drink not found"
+                )
+    
+    return result
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def set_items(request: CreateDrink, db = Depends(get_session)):
     request_obj = Drink(
@@ -69,6 +82,9 @@ async def update_item(drink_id, update: UpdateDrink, db = Depends(get_session)):
     query = select(Drink).where(Drink.id == drink_id)
     result = await db.execute(query)
     drink = result.scalar_one_or_none()
+
+    if drink is None:
+        raise HTTPException(status_code=404, detail = "Drink not found")
 
     for k,v in update.model_dump(exclude_unset=True).items():
         try:
