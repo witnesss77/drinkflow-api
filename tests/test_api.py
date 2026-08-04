@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+import json
 from sqlalchemy.exc import IntegrityError
 
 class TestDrinkAPI:
@@ -171,3 +172,60 @@ class TestWarehouseAPI:
         
         response = test_client.delete(f"/warehouses/{warehouse_id}")
         assert response.status_code == 200
+
+class TestOrdersAPI:
+    @pytest.mark.asyncio
+    async def test_get_orders(self, test_client: TestClient):
+        response = test_client.get("/orders")
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(["page", "user_id", "warehouse_id", "status", "is_paid"],
+            [(None, None, None, None, False),
+            (0, 2, 2, None, None),
+            ])
+    async def test_get_orders_with_params(self,
+        test_client, 
+        page, 
+        user_id, 
+        warehouse_id, 
+        status, 
+        is_paid):
+
+        obj = {
+        "page":page, 
+        "user_id":user_id, 
+        "warehouse_id":warehouse_id, 
+        "status":status, 
+        "is_paid":is_paid
+        }
+
+        obj = json.dumps(obj)
+        response = test_client.get("/orders", 
+        params=obj)
+        print(response.status_code)
+        print(response.text)
+        assert response.status_code == 200
+    
+    @pytest.mark.parametrize("page", [1, 0])
+    def test_get_orders_pagination(self, page, test_client: TestClient):
+        response = test_client.get("/orders", params={"page":page})
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    def test_set_order(self, test_client):
+        obj = {"user_id":2, "warehouse_id":2}
+        obj = json.dumps(obj)
+
+        response = test_client.post("/orders", json = obj)
+        assert response.status_code == 201
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("order_id", [6])
+    def test_order_change_status(self, test_client: TestClient, order_id):
+        response = test_client.patch(f"/orders/{order_id}/change_status")
+        ...
+
+    
+class TestAuthAPI:
+    ...

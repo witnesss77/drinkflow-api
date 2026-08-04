@@ -23,10 +23,10 @@ async def get_orders(
     if user_id:
         query = query.where(Order.user_id == user_id)
     if warehouse_id:
-        query = query.where(Order.warehouse_id == user_id)
+        query = query.where(Order.warehouse_id == warehouse_id)
     if status:
         query = query.where(Order.status == status)
-    if is_paid:
+    if is_paid is not None:
         query = query.where(Order.is_paid == is_paid)
         
     if page:
@@ -37,7 +37,6 @@ async def get_orders(
         result = await db.execute(query)
         return result.scalars().all()
     else:
-        query = select(Order)
         result = await db.execute(query)
         return result.scalars().all()
 
@@ -59,7 +58,7 @@ async def set_orders(request: CreateOrder, db = Depends(get_session)):
             status_code=409,
             detail="Order already exists or unique constraint violated"
         )
-    
+
     return {"status": status.HTTP_201_CREATED, "message": "Order created successfully"}
 
 @router.patch("/{order_id:int}/payment")
