@@ -134,15 +134,15 @@ async def get_items(
     query = select(OrderItem)
 
     if order_id:
-        query.where(OrderItem.order_id == order_id)
+        query = query.where(OrderItem.order_id == order_id)
     if user_id:
-        query.where(OrderItem.user_id == user_id)
+        query = query.where(OrderItem.user_id == user_id)
     if drink_id:
-        query.where(OrderItem.drink_id == drink_id)
+        query = query.where(OrderItem.drink_id == drink_id)
     if quantity:
-        query.where(OrderItem.quantity == quantity)
+        query = query.where(OrderItem.quantity == quantity)
     if pricier:
-        query.where(OrderItem.price_per_item < pricier)
+        query = query.where(OrderItem.price_per_item >= pricier)
 
     query = query.order_by(OrderItem.id)
     result = await db.execute(query)

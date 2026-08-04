@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, status
 from core.models.models import User, Stock, Warehouse, Order, OrderItem
 from core.models.database import get_session
 
@@ -77,7 +77,7 @@ class OrderService:
 
         order.status = "cancelled"
         await db.commit()
-        return "done"
+        return status.HTTP_200_OK
     
     async def remove_item(item_id, db):
         query = select(OrderItem).where(OrderItem.id == item_id)
