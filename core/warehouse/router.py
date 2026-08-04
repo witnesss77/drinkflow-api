@@ -68,7 +68,9 @@ async def delete_warehouse(warehouse_id, db = Depends(get_session)):
             status_code=404,
             detail="Warehouse doesnt exist"
         )
-    
-    await db.delete(warehouse)
-    await db.commit()
+    try:
+        await db.delete(warehouse)
+        await db.commit()
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail="Warehouse has active orders, undeletable")
     return {"status": status.HTTP_200_OK, "message": "Warehouse deleted successfully"}

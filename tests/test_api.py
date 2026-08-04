@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import IntegrityError
 
 class TestDrinkAPI:
     @pytest.mark.asyncio
@@ -102,7 +103,7 @@ class TestFactoriesAPI:
         response = test_client.delete(f"/factories/{factory_id}")
         assert response.status_code == 200
 
-
+# добавить в сет метод проверку на уже существующий дринк айди 
 class TestStocksAPI:
     @pytest.mark.asyncio
     async def test_get_stocks(self, test_client):
@@ -136,4 +137,37 @@ class TestStocksAPI:
     @pytest.mark.parametrize("stock_id", [17])
     async def test_delete_stock(self, test_client, stock_id):
         response = test_client.delete(f"/stocks/{stock_id}")
+        assert response.status_code == 200
+
+class TestWarehouseAPI:
+    @pytest.mark.asyncio
+    async def test_get_warehouses(self, test_client):
+        response = test_client.get("/warehouses")
+        assert response.status_code == 200
+    
+    @pytest.mark.asyncio
+    async def test_set_warehouse(self, test_client):
+        obj = {
+                "name": "test",
+                "address": "test_location"
+            }
+            
+        response = test_client.post("/warehouses", json=obj)
+        assert response.status_code == 201
+    
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("warehouse_id, payload",
+            [
+            (2, {"name":"склад 22", "location": "Moscow"}), 
+            ])
+            
+    async def test_patch_warehouse(self, test_client: TestClient, warehouse_id: int, payload):
+        response = test_client.patch(f"/warehouses/{warehouse_id}", params=payload)
+        assert response.status_code != 400
+        
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("warehouse_id", [3])
+    async def test_delete_warehouse(self, warehouse_id, test_client):
+        
+        response = test_client.delete(f"/warehouses/{warehouse_id}")
         assert response.status_code == 200
