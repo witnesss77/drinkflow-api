@@ -283,7 +283,23 @@ class TestOrdersAPI:
         response = test_client.get("/orders/order_items", params = fixed)
         print(response.text)
         assert response.status_code == 200
-    
 
+    # @pytest.mark.asyncio
+    # @pytest.mark.parametrize()
+    # async def test_add_item_to_order():
+    #     ...
+
+    # @pytest.mark.asyncio
+    # @pytest.mark.parametrize()
+    # async def test_change_item_quantity():
+    #     ...
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("item_id", [10])
+    async def test_delete_warehouse(self, item_id, test_client):
+            
+        response = test_client.delete(f"/orders/order_items/{item_id}")
+        assert response.status_code == 200
+    
 class TestAuthAPI:
     ...
