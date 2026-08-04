@@ -4,7 +4,6 @@ import json
 from core.main import app
 
 class TestDrinkAPI:
-    
     @pytest.mark.asyncio
     async def test_get_drinks(self, test_client):
         response = test_client.get("/drinks")
@@ -71,5 +70,37 @@ class TestDrinkAPI:
 
 
 
-class TestOrderService:
-    ...
+class TestFactoriesAPI:
+    @pytest.mark.asyncio
+    async def test_get_factories(self, test_client):
+        response = test_client.get("/factories")
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_set_factory(self, test_client):
+        obj = {
+                "name": "test",
+                "location": "test_location"
+                }
+        
+        response = test_client.post("/factories", json=obj)
+        assert response.status_code == 201
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("factory_id, payload",
+            [
+            (2, {"name":None, "location": "Moscow",}), 
+            (1, {"name":"zavod"})
+            ])
+        
+    async def test_patch_factory(self, test_client: TestClient, factory_id: int, payload):
+        response = test_client.patch(f"/factories/{factory_id}", params=payload)
+            
+        assert response.status_code != 400
+    
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("factory_id", [2])
+    async def test_delete_factory(self, factory_id, test_client):
+    
+        response = test_client.delete(f"/factories/{factory_id}")
+        assert response.status_code == 200
