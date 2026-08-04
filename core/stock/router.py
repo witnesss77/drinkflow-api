@@ -29,12 +29,14 @@ async def set_stocks(request: CreateStock, db = Depends(get_session)):
     try:
         db.add(stock)
         await db.commit()
+        return stock
     except IntegrityError:
         await db.rollback()
         raise HTTPException(
             status_code=409,
             detail="Stock already exists or unique constraint violated"
         )
+
 
 @router.patch("/{stock_id:int}")
 async def update_stock(stock_id: int, request: UpdateStock, db = Depends(get_session)):

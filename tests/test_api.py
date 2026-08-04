@@ -1,7 +1,5 @@
 import pytest
 from fastapi.testclient import TestClient
-import json
-from core.main import app
 
 class TestDrinkAPI:
     @pytest.mark.asyncio
@@ -95,7 +93,6 @@ class TestFactoriesAPI:
         
     async def test_patch_factory(self, test_client: TestClient, factory_id: int, payload):
         response = test_client.patch(f"/factories/{factory_id}", params=payload)
-            
         assert response.status_code != 400
     
     @pytest.mark.asyncio
@@ -103,4 +100,40 @@ class TestFactoriesAPI:
     async def test_delete_factory(self, factory_id, test_client):
     
         response = test_client.delete(f"/factories/{factory_id}")
+        assert response.status_code == 200
+
+
+class TestStocksAPI:
+    @pytest.mark.asyncio
+    async def test_get_stocks(self, test_client):
+        response = test_client.get("/stocks")
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("drink_id, warehouse_id, quantity, reserved_quantity", [(17,1,2,1)])
+    async def test_set_stock(self, test_client, drink_id, warehouse_id, quantity, reserved_quantity):
+        obj = {
+            "drink_id": drink_id,
+            "warehouse_id": warehouse_id,
+            "quantity": quantity,
+            "reserved_quantity": reserved_quantity
+        }
+
+        response = test_client.post("/stocks", json=obj)
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("stock_id, quantity, reserved_quantity", [(7, 0, 0)])
+    async def test_patch_stock(self, test_client, stock_id, quantity, reserved_quantity):
+        obj = {
+            "quantity": quantity, 
+            "reserved_quantity": reserved_quantity
+        }
+        response = test_client.patch(f"/stocks/{stock_id}", json = obj)
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("stock_id", [17])
+    async def test_delete_stock(self, test_client, stock_id):
+        response = test_client.delete(f"/stocks/{stock_id}")
         assert response.status_code == 200
