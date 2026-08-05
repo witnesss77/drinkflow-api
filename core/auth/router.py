@@ -59,11 +59,11 @@ async def login(
     refresh_token_expires = timedelta(minutes=int(refresh_token_expire_minutes))
 
     access_token = create_jwt(
-        token_type = "access_token", data={"sub": user.email, "id": user.id}, 
+        token_type = "access_token", data={"sub": user.email, "id": str(user.id)}, 
         expires_delta=access_token_expires)
 
     refresh_token = create_jwt(
-        token_type = "refresh_token", data={"sub": user.id}, 
+        token_type = "refresh_token", data={"sub": str(user.id)}, 
         expires_delta= refresh_token_expires)
 
     return {"access_token":access_token,
@@ -115,10 +115,10 @@ async def refresh_access_token(refresh_token: str, db = Depends(get_session)):
     payload = jwt.decode(refresh_token, key = secret_key, algorithms=[algorithms])
     try:
         payload.get("type") == "refresh_token"
-        user_id = payload.get("sub")
+        user_id = int(payload.get("sub"))
 
         query = select(User).where(User.id == user_id)
-        result = db.execute(query)
+        result = await db.execute(query)
         user_obj = result.scalar_one_or_none()
 
         if user_obj is None:

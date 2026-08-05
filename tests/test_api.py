@@ -310,4 +310,42 @@ class TestOrdersAPI:
         assert response.status_code == 200
     
 class TestAuthAPI:
-    ...
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "payload", 
+        [
+            ({
+                "name": "string",
+                "email": "user@example22.com",
+                "password": "stringst",
+                "role": "admin"
+            })
+        ])
+    async def test_register(self, test_client, payload):
+        response = test_client.post('/auth/register', json = payload)
+        assert response.status_code == 201
+
+
+    @pytest.mark.asyncio
+    async def test_get_protected_route(self, test_client):
+        response = test_client.get("/auth/me")
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "payload", 
+        [
+            ({"username": "str", "password": 12345678}),
+        ])
+    async def test_get_access_token(self, test_client, payload):
+        response = test_client.post('/auth/token', data = payload)
+        print(response.text)
+        test_token = response.json()["refresh_token"]
+        print(test_token)
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_refresh_access_token(self, test_client, refresh_token: str):
+        response = test_client.post("/auth/refresh", params={"refresh_token": refresh_token})
+        print(response.text)
+        assert response.status_code == 200
