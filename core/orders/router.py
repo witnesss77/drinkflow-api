@@ -165,7 +165,7 @@ async def update_items(item_id, request: UpdateOrderItem, db = Depends(get_sessi
                 detail="Item not found"
             )
 
-    await OrderService.change_quantity(item_id, request, db)
+    return await OrderService.change_quantity(item_id, request, db)
 
 
 @router.delete("/order_items/{item_id:int}")

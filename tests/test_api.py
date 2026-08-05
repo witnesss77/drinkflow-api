@@ -180,7 +180,6 @@ class TestWarehouseAPI:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("warehouse_id", [3])
     async def test_delete_warehouse(self, warehouse_id, test_client):
-        
         response = test_client.delete(f"/warehouses/{warehouse_id}")
         assert response.status_code == 200
 
@@ -244,7 +243,7 @@ class TestOrdersAPI:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("order_id", [8])
     async def test_order_payment(self, test_client: TestClient, order_id):
-        response = test_client.patch(f"/orders/{order_id}/payment", data ={'username': 'manager', 'id': 8})
+        response = test_client.patch(f"/orders/{order_id}/payment", data = {'username': 'manager', 'id': 8})
         print(response.status_code)
         print(response.text)
         assert response.status_code == 200
@@ -284,19 +283,28 @@ class TestOrdersAPI:
         print(response.text)
         assert response.status_code == 200
 
-    # @pytest.mark.asyncio
-    # @pytest.mark.parametrize()
-    # async def test_add_item_to_order():
-    #     ...
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "warehouse_id, payload",
+        [
+            (2, {"order_id": 5,"user_id": 2,"drink_id": 4,"quantity": 1,"price_per_item": 10})
+        ])
+    async def test_add_item_to_order(self, test_client, warehouse_id, payload):
+        response = test_client.post(f"/orders/order_items/", params = {"warehouse_id": warehouse_id}, json = payload)
+        assert response.status_code == 200
 
-    # @pytest.mark.asyncio
-    # @pytest.mark.parametrize()
-    # async def test_change_item_quantity():
-    #     ...
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("item_id, payload", 
+            [
+                (9, {"quantity": 1, "price_per_item": 100})
+            ])
+    async def test_change_item_quantity(self, test_client: TestClient, item_id, payload):
+        response = test_client.patch(f"/orders/order_items/{item_id}", json=payload)
+        assert response.status_code == 200
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("item_id", [10])
-    async def test_delete_warehouse(self, item_id, test_client):
+    async def test_delete_order_item(self, item_id, test_client):
             
         response = test_client.delete(f"/orders/order_items/{item_id}")
         assert response.status_code == 200
