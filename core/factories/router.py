@@ -31,7 +31,7 @@ async def create_factory(request: CreateFactory, db = Depends(get_session)):
             detail="Factory already exists or unique constraint violated"
         )
     
-    return {"status": status.HTTP_201_CREATED, "message": "Factory created successfully"}
+    return factory
 
 @router.patch("/{factory_id:int}")
 async def update_factory(factory_id, update: UpdateFactory, db = Depends(get_session)):
