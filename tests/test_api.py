@@ -6,6 +6,7 @@ import json
 
 
 
+
 def mock_get_current_user():
     return {"username": "manager", "id": 8}
 
@@ -101,6 +102,7 @@ class TestFactoriesAPI:
     def test_get_factories(self, test_client):
         response = test_client.get("/factories")
         print(response.text)
+        print(response.text)
         assert response.status_code == 200
 
     def test_set_factory(self, test_client):
@@ -110,6 +112,7 @@ class TestFactoriesAPI:
                 }
 
         response = test_client.post("/factories", json=obj)
+        print(response.text)
         print(response.text)
         assert response.status_code == 201
 
@@ -136,6 +139,7 @@ class TestFactoriesAPI:
         factory_id = response.json()["id"]
 
         response = test_client.delete(f"/factories/{factory_id}")
+        print(response.text)
         print(response.text)
         assert response.status_code == 200
 
