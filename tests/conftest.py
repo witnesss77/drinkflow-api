@@ -29,6 +29,14 @@ async def prepare_database():
         await conn.run_sync(Base.metadata.drop_all)
 
 @pytest.fixture
+def create_drink(test_client):
+    ...
+
+@pytest.fixture
+def create_warehouse(test_client):
+    ...
+
+@pytest.fixture
 def refresh_token(test_client):
     payload = {
         "username": "str",

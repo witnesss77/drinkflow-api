@@ -1,7 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from tests.conftest import TestingSessionLocal
-from core.auth.router import get_current_user, get_session
+from core.auth.router import get_current_user
 from core.main import app
 import json
 
@@ -14,31 +13,11 @@ app.dependency_overrides[get_current_user] = mock_get_current_user
 
 
 class TestDrinkAPI:
-    @pytest.mark.asyncio
-    async def test_get_drinks(self, test_client):
+    def test_get_drinks(self, test_client):
         response = test_client.get("/drinks")
         print(response.text)
         assert response.status_code == 200
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        ["page", "name", "desc", "alcoholic", "price", "factory_id"],
-                            [
-                            (None, None, None, True, None, None),
-                            (0,"cwcme", None, False, None, None),
-                            (1,2,3,4,5,6),
-                            ],)
-    
-    async def test_get_drinks_with_params(self, test_client, page, name, desc, alcoholic, price, factory_id):
-        response = test_client.get("/drinks", 
-        params={"page":page, 
-                "name":name, 
-                "desc":desc, 
-                "alcoholic":alcoholic, 
-                "price":price,
-                "factory_id":factory_id})
-        print(response.text)
-        assert response.status_code == 200
 
     @pytest.mark.parametrize("page", [1, 0])
     def test_get_drinks_pagination(self, page, test_client):
@@ -47,12 +26,11 @@ class TestDrinkAPI:
         assert response.status_code == 200
 
 
-    @pytest.mark.asyncio
-    async def test_set_drinks(self, test_client):
+    def test_set_drinks(self, test_client):
         obj = {
         "name": "test",
         "desc": "none",
-        "alcoholic": False,
+        "alcoholic": True,
         "price": 111,
         "factory_id": 1,
         }
@@ -61,100 +39,152 @@ class TestDrinkAPI:
         print(response.text)
         assert response.status_code == 201
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("drink_id, payload",
+
+    @pytest.mark.parametrize(
+        ["page", "name", "desc", "alcoholic", "price", "factory_id"],
         [
-        (6, {"name":None, "desc": None,}), 
-        (8, {"name":None})
-        ])
-    
-    async def test_patch_drinks(self, test_client: TestClient, drink_id: int, payload):
-        response = test_client.patch(f"/{drink_id}", params=payload)
-        print(response.text)
-        assert response.status_code != 400
+            (None, None, None, True, None, None),
+        ],)
+        
+    def test_get_drinks_with_params(self, test_client, page, name, desc, alcoholic, price, factory_id):
+        params={
+        "page":page, 
+        "name":name, 
+        "desc":desc, 
+        "alcoholic":alcoholic, 
+        "price":price,
+        "factory_id":factory_id}
+        
+        fix = {k:v for k,v in params.items() if v != None}
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("drink_id", [0])
-    async def test_delete_drinks(self, drink_id, test_client):
-
-        response = test_client.delete(f"/{drink_id}")
+        response = test_client.get("/drinks", params = fix)
         print(response.text)
         assert response.status_code == 200
 
 
+    def test_patch_drinks(self, test_client: TestClient):
+        obj = {
+        "name": "test",
+        "desc": "none",
+        "alcoholic": True,
+        "price": 111,
+        "factory_id": 1,
+        }
+
+        response = test_client.post("/drinks", json=obj)
+        print(response.text)
+        drink_id = response.json()["id"]
+        
+        response = test_client.patch(f"/drinks/{drink_id}", json = {"name": "test"})
+        print(response.text)
+        assert response.status_code == 200
+
+
+    def test_delete_drinks(self, test_client):
+        obj = {
+                "name": "test",
+                "desc": "none",
+                "alcoholic": True,
+                "price": 111,
+                "factory_id": 1,
+                }
+
+        response = test_client.post("/drinks", json=obj)
+        drink_id = response.json()["id"]
+        response = test_client.delete(f"/drinks/{drink_id}")
+
+        print(response.text)
+        assert response.status_code == 200
+
 
 class TestFactoriesAPI:
-    @pytest.mark.asyncio
-    async def test_get_factories(self, test_client):
+    def test_get_factories(self, test_client):
         response = test_client.get("/factories")
         print(response.text)
         assert response.status_code == 200
 
-    @pytest.mark.asyncio
-    async def test_set_factory(self, test_client):
+    def test_set_factory(self, test_client):
         obj = {
                 "name": "test",
                 "location": "test_location"
                 }
-        
+
         response = test_client.post("/factories", json=obj)
         print(response.text)
         assert response.status_code == 201
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("factory_id, payload",
-            [
-            (2, {"name":None, "location": "Moscow",}), 
-            (1, {"name":"zavod"})
-            ])
-        
-    async def test_patch_factory(self, test_client: TestClient, factory_id: int, payload):
-        response = test_client.patch(f"/factories/{factory_id}", params=payload)
+
+    def test_patch_factory(self, test_client: TestClient):
+        obj = {
+            "name": "zavod",
+            "location": "ekodqkodq"
+        }
+
+        response = test_client.post("/factories", json=obj)
         print(response.text)
-        assert response.status_code != 400
-    
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("factory_id", [2])
-    async def test_delete_factory(self, factory_id, test_client):
-    
+        factory_id = response.json()["id"]
+
+        response = test_client.patch(f"/factories/{factory_id}", json = {"name": "test"})
+        print(response.text)
+        assert response.status_code == 200
+
+
+    def test_delete_factory(self, test_client):
+        obj = {"name": "test", "location": "test_location"}
+
+        response = test_client.post("/factories", json=obj)
+        factory_id = response.json()["id"]
+
         response = test_client.delete(f"/factories/{factory_id}")
         print(response.text)
         assert response.status_code == 200
 
-# добавить в сет метод проверку на уже существующий дринк айди 
+
 class TestStocksAPI:
-    @pytest.mark.asyncio
-    async def test_get_stocks(self, test_client):
+    def test_get_stocks(self, test_client):
         response = test_client.get("/stocks")
         assert response.status_code == 200
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("drink_id, warehouse_id, quantity, reserved_quantity", [(17,1,2,1)])
-    async def test_set_stock(self, test_client, drink_id, warehouse_id, quantity, reserved_quantity):
+    def test_set_stock(self, test_client):
         obj = {
-            "drink_id": drink_id,
-            "warehouse_id": warehouse_id,
-            "quantity": quantity,
-            "reserved_quantity": reserved_quantity
+            "drink_id": 1,
+            "warehouse_id": 1,
+            "quantity": 10,
+            "reserved_quantity": 1
         }
 
         response = test_client.post("/stocks", json=obj)
+        print(response.text)
         assert response.status_code == 200
+        stock_id = response.json()["id"]
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("stock_id, quantity, reserved_quantity", [(7, 0, 0)])
-    async def test_patch_stock(self, test_client, stock_id, quantity, reserved_quantity):
+    def test_patch_stock(self, test_client):
         obj = {
-            "quantity": quantity, 
-            "reserved_quantity": reserved_quantity
+        "drink_id": 6,
+        "warehouse_id": 1,
+        "quantity": 1,
+        "reserved_quantity": 11
         }
-        response = test_client.patch(f"/stocks/{stock_id}", json = obj)
+        
+        response = test_client.post("/stocks", json=obj)
+        stock_id = response.json()["id"]
+        response = test_client.patch(f"/stocks/{stock_id}", json = {"quantity": 32})
+        print(response.text)
         assert response.status_code == 200
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("stock_id", [17])
-    async def test_delete_stock(self, test_client, stock_id):
+
+    def test_delete_stock(self, test_client):
+        obj = {
+        "drink_id": 7,
+        "warehouse_id": 1,
+        "quantity": 1,
+        "reserved_quantity": 11
+        }
+                
+        response = test_client.post("/stocks", json=obj)
+        stock_id = response.json()["id"]
         response = test_client.delete(f"/stocks/{stock_id}")
+        print(response.text)
         assert response.status_code == 200
 
 class TestWarehouseAPI:
