@@ -75,7 +75,7 @@ async def set_items(request: CreateDrink, db = Depends(get_session)):
             status_code=409,
             detail="Drink already exists or unique constraint violated"
         )
-    return {"status": status.HTTP_201_CREATED, "message": "Drink created successfully"}
+    return request_obj
 
 @router.patch("/{drink_id:int}")
 async def update_item(drink_id, update: UpdateDrink, db = Depends(get_session)):

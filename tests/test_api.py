@@ -149,10 +149,10 @@ class TestStocksAPI:
         response = test_client.get("/stocks")
         assert response.status_code == 200
 
-    def test_set_stock(self, test_client):
+    def test_set_stock(self, test_client, create_drink, create_warehouse):
         obj = {
-            "drink_id": 1,
-            "warehouse_id": 1,
+            "drink_id": create_drink,
+            "warehouse_id": create_warehouse,
             "quantity": 10,
             "reserved_quantity": 1
         }
@@ -160,14 +160,14 @@ class TestStocksAPI:
         response = test_client.post("/stocks", json=obj)
         print(response.text)
         assert response.status_code == 200
-        stock_id = response.json()["id"]
 
-    def test_patch_stock(self, test_client):
+
+    def test_patch_stock(self, test_client, create_drink, create_warehouse):
         obj = {
-        "drink_id": 6,
-        "warehouse_id": 1,
-        "quantity": 1,
-        "reserved_quantity": 11
+        "drink_id": create_drink,
+        "warehouse_id": create_warehouse,
+        "quantity": 10,
+        "reserved_quantity": 1
         }
         
         response = test_client.post("/stocks", json=obj)
@@ -177,12 +177,12 @@ class TestStocksAPI:
         assert response.status_code == 200
 
 
-    def test_delete_stock(self, test_client):
+    def test_delete_stock(self, test_client, create_drink, create_warehouse):
         obj = {
-        "drink_id": 7,
-        "warehouse_id": 1,
-        "quantity": 1,
-        "reserved_quantity": 11
+        "drink_id": create_drink,
+        "warehouse_id": create_warehouse,
+        "quantity": 10,
+        "reserved_quantity": 1
         }
                 
         response = test_client.post("/stocks", json=obj)
@@ -192,13 +192,11 @@ class TestStocksAPI:
         assert response.status_code == 200
 
 class TestWarehouseAPI:
-    @pytest.mark.asyncio
-    async def test_get_warehouses(self, test_client):
+    def test_get_warehouses(self, test_client):
         response = test_client.get("/warehouses")
         assert response.status_code == 200
-    
-    @pytest.mark.asyncio
-    async def test_set_warehouse(self, test_client):
+
+    def test_set_warehouse(self, test_client):
         obj = {
                 "name": "test",
                 "address": "test_location"
@@ -207,20 +205,17 @@ class TestWarehouseAPI:
         response = test_client.post("/warehouses", json=obj)
         assert response.status_code == 201
     
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("warehouse_id, payload",
-            [
-            (2, {"name":"склад 22", "location": "Moscow"}), 
-            ])
-            
-    async def test_patch_warehouse(self, test_client: TestClient, warehouse_id: int, payload):
-        response = test_client.patch(f"/warehouses/{warehouse_id}", params=payload)
-        assert response.status_code != 400
+       
+    def test_patch_warehouse(self, test_client: TestClient, create_warehouse):
+        w_id = create_warehouse
+        response = test_client.patch(f"/warehouses/{w_id}", json = {"location": "moscow"})
+        assert response.status_code == 200
         
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("warehouse_id", [3])
-    async def test_delete_warehouse(self, warehouse_id, test_client):
-        response = test_client.delete(f"/warehouses/{warehouse_id}")
+
+    async def test_delete_warehouse(self, test_client, create_warehouse):
+        w_id = create_warehouse
+
+        response = test_client.delete(f"/warehouses/{w_id}")
         assert response.status_code == 200
 
 class TestOrdersAPI:

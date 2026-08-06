@@ -30,11 +30,28 @@ async def prepare_database():
 
 @pytest.fixture
 def create_drink(test_client):
-    ...
+    obj = {
+            "name": "test",
+            "desc": "test",
+            "alcoholic": True,
+            "price": 111,
+            "factory_id": 1,
+    }
+    request = test_client.post('/drinks', json = obj)
+    return request.json()["id"]
+
 
 @pytest.fixture
-def create_warehouse(test_client):
-    ...
+def create_warehouse(test_client) -> int:
+    response = test_client.post(
+        "/warehouses",
+        json={
+            "name": "test warehouse",
+            "address": "test location"
+        }
+    )
+
+    return response.json()["id"]
 
 @pytest.fixture
 def refresh_token(test_client):

@@ -20,6 +20,13 @@ async def set_stocks(request: CreateStock, db = Depends(get_session)):
             status_code=409,
             detail="Stock's reserved quantity cannot be more than existing quantity"
         )
+
+    stmt = select(Stock).where(Stock.drink_id == request.drink_id)
+    query = await db.execute(stmt)
+    res = query.scalars().all()
+    if len(res) > 0:
+        raise HTTPException(status_code=409, detail=f"This drink is already in stock, {res}")
+    
     stock = Stock(
         drink_id = request.drink_id,
         warehouse_id = request.warehouse_id,
