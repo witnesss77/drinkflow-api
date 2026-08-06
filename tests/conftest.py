@@ -1,11 +1,32 @@
 import pytest
-
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from core.cfg import tests_db_url
+from core.models.models import Base
 from fastapi.testclient import TestClient
 from core.main import app
+
+
+engine = create_async_engine(tests_db_url)
+
+TestingSessionLocal = async_sessionmaker(
+    engine,
+    expire_on_commit=False
+)
+
 
 @pytest.fixture
 def test_client() -> TestClient:
     return TestClient(app)
+
+@pytest.fixture(scope="session", autouse=True)
+async def prepare_database():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    yield
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 @pytest.fixture
 def refresh_token(test_client):

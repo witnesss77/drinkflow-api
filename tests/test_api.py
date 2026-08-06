@@ -1,11 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch
-from core.auth.router import get_current_user
+from tests.conftest import TestingSessionLocal
+from core.auth.router import get_current_user, get_session
 from core.main import app
 import json
-from fastapi import Depends
-from sqlalchemy.exc import IntegrityError
+
 
 
 def mock_get_current_user():
@@ -18,6 +17,7 @@ class TestDrinkAPI:
     @pytest.mark.asyncio
     async def test_get_drinks(self, test_client):
         response = test_client.get("/drinks")
+        print(response.text)
         assert response.status_code == 200
 
     @pytest.mark.asyncio
@@ -37,12 +37,13 @@ class TestDrinkAPI:
                 "alcoholic":alcoholic, 
                 "price":price,
                 "factory_id":factory_id})
-        
+        print(response.text)
         assert response.status_code == 200
 
     @pytest.mark.parametrize("page", [1, 0])
     def test_get_drinks_pagination(self, page, test_client):
         response = test_client.get("/drinks", params={"page":page})
+        print(response.text)
         assert response.status_code == 200
 
 
@@ -57,7 +58,7 @@ class TestDrinkAPI:
         }
 
         response = test_client.post("/drinks", json=obj)
-
+        print(response.text)
         assert response.status_code == 201
 
     @pytest.mark.asyncio
@@ -69,7 +70,7 @@ class TestDrinkAPI:
     
     async def test_patch_drinks(self, test_client: TestClient, drink_id: int, payload):
         response = test_client.patch(f"/{drink_id}", params=payload)
-        
+        print(response.text)
         assert response.status_code != 400
 
     @pytest.mark.asyncio
@@ -77,6 +78,7 @@ class TestDrinkAPI:
     async def test_delete_drinks(self, drink_id, test_client):
 
         response = test_client.delete(f"/{drink_id}")
+        print(response.text)
         assert response.status_code == 200
 
 
@@ -85,6 +87,7 @@ class TestFactoriesAPI:
     @pytest.mark.asyncio
     async def test_get_factories(self, test_client):
         response = test_client.get("/factories")
+        print(response.text)
         assert response.status_code == 200
 
     @pytest.mark.asyncio
@@ -95,6 +98,7 @@ class TestFactoriesAPI:
                 }
         
         response = test_client.post("/factories", json=obj)
+        print(response.text)
         assert response.status_code == 201
 
     @pytest.mark.asyncio
@@ -106,6 +110,7 @@ class TestFactoriesAPI:
         
     async def test_patch_factory(self, test_client: TestClient, factory_id: int, payload):
         response = test_client.patch(f"/factories/{factory_id}", params=payload)
+        print(response.text)
         assert response.status_code != 400
     
     @pytest.mark.asyncio
@@ -113,6 +118,7 @@ class TestFactoriesAPI:
     async def test_delete_factory(self, factory_id, test_client):
     
         response = test_client.delete(f"/factories/{factory_id}")
+        print(response.text)
         assert response.status_code == 200
 
 # добавить в сет метод проверку на уже существующий дринк айди 
