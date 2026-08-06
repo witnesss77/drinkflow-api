@@ -8,13 +8,9 @@ DrinkFlow API — асинхронный REST API для управления н
 
 ## Стек
 
-- Python 3.13
 - FastAPI
 - SQLAlchemy
 - PostgreSQL
-- Alembic
 - Redis
 - RabbitMQ
-- Docker
-- Pytest
-- GitHub Actions CI/CD
+- GitHub CI/CD
