@@ -31,7 +31,7 @@ async def create_warehouse(request: CreateWarehouse, db = Depends(get_session)):
             detail="Warehouse already exists or unique constraint violated"
         )
     
-    return {"status": status.HTTP_201_CREATED, "message": "Warehouse created successfully"}
+    return warehouse
 
 @router.patch("/{warehouse_id:int}")
 async def update_warehouse(warehouse_id, update: UpdateWarehouse, db = Depends(get_session)):

@@ -2,9 +2,9 @@ import pytest
 from fastapi.testclient import TestClient
 from core.auth.router import get_current_user
 from core.main import app
+import random
 import json
-
-
+import uuid
 
 
 def mock_get_current_user():
@@ -109,7 +109,7 @@ class TestFactoriesAPI:
         obj = {
                 "name": "test",
                 "location": "test_location"
-                }
+        }
 
         response = test_client.post("/factories", json=obj)
         print(response.text)
@@ -149,10 +149,10 @@ class TestStocksAPI:
         response = test_client.get("/stocks")
         assert response.status_code == 200
 
-    def test_set_stock(self, test_client):
+    def test_set_stock(self, test_client, create_drink, create_warehouse):
         obj = {
-            "drink_id": 1,
-            "warehouse_id": 1,
+            "drink_id": create_drink,
+            "warehouse_id": create_warehouse,
             "quantity": 10,
             "reserved_quantity": 1
         }
@@ -160,14 +160,14 @@ class TestStocksAPI:
         response = test_client.post("/stocks", json=obj)
         print(response.text)
         assert response.status_code == 200
-        stock_id = response.json()["id"]
 
-    def test_patch_stock(self, test_client):
+
+    def test_patch_stock(self, test_client, create_drink, create_warehouse):
         obj = {
-        "drink_id": 6,
-        "warehouse_id": 1,
-        "quantity": 1,
-        "reserved_quantity": 11
+        "drink_id": create_drink,
+        "warehouse_id": create_warehouse,
+        "quantity": 10,
+        "reserved_quantity": 1
         }
         
         response = test_client.post("/stocks", json=obj)
@@ -177,12 +177,12 @@ class TestStocksAPI:
         assert response.status_code == 200
 
 
-    def test_delete_stock(self, test_client):
+    def test_delete_stock(self, test_client, create_drink, create_warehouse):
         obj = {
-        "drink_id": 7,
-        "warehouse_id": 1,
-        "quantity": 1,
-        "reserved_quantity": 11
+        "drink_id": create_drink,
+        "warehouse_id": create_warehouse,
+        "quantity": 10,
+        "reserved_quantity": 1
         }
                 
         response = test_client.post("/stocks", json=obj)
@@ -192,13 +192,11 @@ class TestStocksAPI:
         assert response.status_code == 200
 
 class TestWarehouseAPI:
-    @pytest.mark.asyncio
-    async def test_get_warehouses(self, test_client):
+    def test_get_warehouses(self, test_client):
         response = test_client.get("/warehouses")
         assert response.status_code == 200
-    
-    @pytest.mark.asyncio
-    async def test_set_warehouse(self, test_client):
+
+    def test_set_warehouse(self, test_client):
         obj = {
                 "name": "test",
                 "address": "test_location"
@@ -207,34 +205,28 @@ class TestWarehouseAPI:
         response = test_client.post("/warehouses", json=obj)
         assert response.status_code == 201
     
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("warehouse_id, payload",
-            [
-            (2, {"name":"склад 22", "location": "Moscow"}), 
-            ])
-            
-    async def test_patch_warehouse(self, test_client: TestClient, warehouse_id: int, payload):
-        response = test_client.patch(f"/warehouses/{warehouse_id}", params=payload)
-        assert response.status_code != 400
+       
+    def test_patch_warehouse(self, test_client: TestClient, create_warehouse):
+        w_id = create_warehouse
+        response = test_client.patch(f"/warehouses/{w_id}", json = {"location": "moscow"})
+        assert response.status_code == 200
         
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("warehouse_id", [3])
-    async def test_delete_warehouse(self, warehouse_id, test_client):
-        response = test_client.delete(f"/warehouses/{warehouse_id}")
+
+    def test_delete_warehouse(self, test_client, create_warehouse):
+        w_id = create_warehouse
+
+        response = test_client.delete(f"/warehouses/{w_id}")
         assert response.status_code == 200
 
 class TestOrdersAPI:
-    @pytest.mark.asyncio
-    async def test_get_orders(self, test_client: TestClient):
+    def test_get_orders(self, test_client: TestClient):
         response = test_client.get("/orders")
         assert response.status_code == 200
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(["page", "user_id", "warehouse_id", "status", "is_paid"],
+    @pytest.mark.parametrize("page, user_id, warehouse_id, status, is_paid",
             [(None, None, None, None, False),
-            (0, 2, 2, None, None),
             ])
-    async def test_get_orders_with_params(self,
+    def test_get_orders_with_params(self,
         test_client, 
         page, 
         user_id, 
@@ -270,48 +262,41 @@ class TestOrdersAPI:
         print(response.text)
         assert response.status_code == 201
     
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("order_id, payload",
-                            
-                            [(8, {"status": "in test", "is_paid": False}),]
-                            )
-    async def test_change_order_status(self, test_client: TestClient, order_id, payload):
-        response = test_client.patch(f"/orders/{order_id}/change_status", json=payload)
+
+    def test_change_order_status(self, test_client: TestClient, create_order):
+        order_id = create_order
+        response = test_client.patch(f"/orders/{order_id}/change_status", json={"status": "in test", "is_paid": False})
         print(response.text)
         assert response.status_code == 200
     
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("order_id", [8])
-    async def test_order_payment(self, test_client: TestClient, order_id):
-        response = test_client.patch(f"/orders/{order_id}/payment", data = {'username': 'manager', 'id': 8})
+    
+    def test_order_payment(self, test_client: TestClient, create_order):
+        order_id = create_order
+        response = test_client.patch(f"/orders/{order_id}/payment")
         print(response.status_code)
         print(response.text)
         assert response.status_code == 200
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("order_id", [5])
-    async def test_delete_order(self, test_client: TestClient, order_id):
+
+    def test_delete_order(self, test_client: TestClient, create_order):
+        order_id = create_order
         response = test_client.delete(f"/orders/{order_id}")
         assert response.status_code == 200
 
 
-    @pytest.mark.asyncio
-    async def test_get_order_items(self, test_client: TestClient):
+    def test_get_order_items(self, test_client: TestClient):
         response = test_client.get("/orders/order_items")
         assert response.status_code == 200
 
 
-    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "order_id, user_id, drink_id, quantity, pricier",
         [
-            (6,None,None,None,1),
-            (6,None,None,None,None)
+            (1,None,None,None,1),
+            (1,None,None,None,None)
         ]
     )
-        
-        
-    async def test_get_order_items_with_params(self, test_client, order_id, user_id, drink_id, quantity, pricier):
+    def test_get_order_items_with_params(self, test_client, order_id, user_id, drink_id, quantity, pricier):
         query = {"order_id":order_id, 
                     "user":user_id, 
                     "drink_id":drink_id, 
@@ -323,69 +308,138 @@ class TestOrdersAPI:
         print(response.text)
         assert response.status_code == 200
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        "warehouse_id, payload",
-        [
-            (2, {"order_id": 5,"user_id": 2,"drink_id": 4,"quantity": 1,"price_per_item": 10})
-        ])
-    async def test_add_item_to_order(self, test_client, warehouse_id, payload):
-        response = test_client.post(f"/orders/order_items/", params = {"warehouse_id": warehouse_id}, json = payload)
-        assert response.status_code == 200
+    
+    def test_add_item_to_order(self, test_client, create_warehouse, create_order, create_user, create_drink):
+        stock = {
+        "drink_id": create_drink,
+        "warehouse_id": create_warehouse,
+        "quantity": 100,
+        "reserved_quantity": 0
+        }
 
-    @pytest.mark.asyncio
+        stock_response = test_client.post("/stocks",json=stock)
+
+        w_id = create_warehouse
+        obj = {
+            "order_id": create_order,
+            "user_id": create_user,
+            "drink_id": create_drink,
+            "quantity": 10,
+            "price_per_item": 100
+            }
+            
+        request = test_client.post('/orders/order_items', params = {"warehouse_id": w_id}, json = obj)
+        print(request.text)
+        assert request.status_code == 200
+
+
     @pytest.mark.parametrize("item_id, payload", 
             [
                 (9, {"quantity": 1, "price_per_item": 100})
             ])
-    async def test_change_item_quantity(self, test_client: TestClient, item_id, payload):
+    def test_change_item_quantity(self, test_client: TestClient, item_id, payload):
         response = test_client.patch(f"/orders/order_items/{item_id}", json=payload)
         assert response.status_code == 200
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("item_id", [10])
-    async def test_delete_order_item(self, item_id, test_client):
-            
+    def test_delete_order_item(self, test_client, create_order_item):
+        item_id = create_order_item
         response = test_client.delete(f"/orders/order_items/{item_id}")
         assert response.status_code == 200
     
 class TestAuthAPI:
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        "payload", 
-        [
-            ({
-                "name": "string",
-                "email": "user@example22.com",
-                "password": "stringst",
-                "role": "admin"
-            })
-        ])
-    async def test_register(self, test_client, payload):
-        response = test_client.post('/auth/register', json = payload)
+    def test_register(self, test_client):
+        email = f"test_{uuid.uuid4()}@test.com"
+        obj = {
+            "name": "test",
+            "email": email,
+            "password": "12345678",
+            "role": "user"
+        }
+        response = test_client.post('/auth/register', json = obj)
         assert response.status_code == 201
 
 
-    @pytest.mark.asyncio
-    async def test_get_protected_route(self, test_client):
+    def test_get_protected_route(self, test_client):
         response = test_client.get("/auth/me")
         assert response.status_code == 200
 
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        "payload", 
-        [
-            ({"username": "str", "password": 12345678}),
-        ])
-    async def test_get_access_token(self, test_client, payload):
-        response = test_client.post('/auth/token', data = payload)
-        print(response.text)
-        test_token = response.json()["refresh_token"]
-        print(test_token)
-        assert response.status_code == 200
 
-    @pytest.mark.asyncio
-    async def test_refresh_access_token(self, test_client, refresh_token: str):
-        response = test_client.post("/auth/refresh", params={"refresh_token": refresh_token})
+    def test_tokens(self, test_client):
+        nums = random.randint(1000,9999)
+        email = f"test_{uuid.uuid4()}@test.com"
+        user = {
+            "name": f"test{nums}",
+            "email": email,
+            "password": "12345678",
+            "role": "user"
+        }
+        register = test_client.post("/auth/register",json=user)
+        assert register.status_code == 201
+        
+        payload = {"username": user["name"],"password": "12345678"}
+        response = test_client.post("/auth/token",data=payload)
+        token = response.json()["refresh_token"]
+
+        response2 = test_client.post("/auth/refresh",json={"refresh_token":token})
+        print(response2.text)
+        assert response2.status_code == 200
+
+
+
+class TestAPINegativeCases:
+    def test_negative_stock(self, test_client, create_drink, create_warehouse):
+        obj = {
+                "drink_id": create_drink,
+                "warehouse_id": create_warehouse,
+                "quantity": -1,
+                "reserved_quantity": 10
+        }
+        
+        response = test_client.post("/stocks", json=obj)
         print(response.text)
-        assert response.status_code == 200
+        assert response.status_code == 422
+
+    def test_order_item_limit(self, test_client, create_warehouse, create_order, create_user, create_drink):
+        stock = {
+                "drink_id": create_drink,
+                "warehouse_id": create_warehouse,
+                "quantity": 10,
+                "reserved_quantity": 0
+                }
+        
+        stock_response = test_client.post("/stocks", json=stock)
+        
+        w_id = create_warehouse
+        obj = {
+            "order_id": create_order,
+            "user_id": create_user,
+            "drink_id": create_drink,
+            "quantity": 100,
+            "price_per_item": 100
+            }
+                    
+        request = test_client.post('/orders/order_items', params = {"warehouse_id": w_id}, json = obj)
+        print(request.text)
+        assert request.status_code == 409
+
+    def test_already_paid_order(self, test_client, create_order):
+        order_id = create_order
+        response = test_client.patch(f"/orders/{order_id}/payment")
+        response2 = test_client.patch(f"/orders/{order_id}/payment")
+        assert response2.status_code == 409
+
+    def test_delete_not_existing_order(self, test_client):
+        response = test_client.delete("/orders/3223")
+        assert response.status_code == 409
+
+    def test_wrong_refresh_token(self, test_client):
+        response = test_client.post(
+            "/auth/refresh",
+            json={"refresh_token": "qeffwRFDSCX"}
+        )
+
+        assert response.status_code == 401
+
+    def test_incorrect_login(self, test_client):
+        response = test_client.post("/auth/token", json = {"username": "wrong_name", "password":"some_password"})
+        assert response.status_code == 422
