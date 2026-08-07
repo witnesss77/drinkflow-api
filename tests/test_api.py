@@ -426,6 +426,10 @@ class TestAPINegativeCases:
         response = test_client.delete("/orders/3223")
         assert response.status_code == 409
 
+    def test_delete_not_existing_factory(self, test_client):
+            response = test_client.delete("/factory/3223")
+            assert response.status_code == 404
+
     def test_wrong_refresh_token(self, test_client):
         response = test_client.post(
             "/auth/refresh",
