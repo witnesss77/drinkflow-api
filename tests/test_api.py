@@ -383,3 +383,63 @@ class TestAuthAPI:
         response2 = test_client.post("/auth/refresh",json={"refresh_token":token})
         print(response2.text)
         assert response2.status_code == 200
+
+
+
+class TestAPINegativeCases:
+    def test_negative_stock(self, test_client, create_drink, create_warehouse):
+        obj = {
+                "drink_id": create_drink,
+                "warehouse_id": create_warehouse,
+                "quantity": -1,
+                "reserved_quantity": 10
+        }
+        
+        response = test_client.post("/stocks", json=obj)
+        print(response.text)
+        assert response.status_code == 422
+
+    def test_order_item_limit(self, test_client, create_warehouse, create_order, create_user, create_drink):
+        stock = {
+                "drink_id": create_drink,
+                "warehouse_id": create_warehouse,
+                "quantity": 10,
+                "reserved_quantity": 0
+                }
+        
+        stock_response = test_client.post("/stocks", json=stock)
+        
+        w_id = create_warehouse
+        obj = {
+            "order_id": create_order,
+            "user_id": create_user,
+            "drink_id": create_drink,
+            "quantity": 100,
+            "price_per_item": 100
+            }
+                    
+        request = test_client.post('/orders/order_items', params = {"warehouse_id": w_id}, json = obj)
+        print(request.text)
+        assert request.status_code == 409
+
+    def test_already_paid_order(self, test_client, create_order):
+        order_id = create_order
+        response = test_client.patch(f"/orders/{order_id}/payment")
+        response2 = test_client.patch(f"/orders/{order_id}/payment")
+        assert response2.status_code == 409
+
+    def test_delete_not_existing_order(self, test_client):
+        response = test_client.delete("/orders/3223")
+        assert response.status_code == 409
+
+    def test_wrong_refresh_token(self, test_client):
+        response = test_client.post(
+            "/auth/refresh",
+            json={"refresh_token": "qeffwRFDSCX"}
+        )
+
+        assert response.status_code == 401
+
+    def test_incorrect_login(self, test_client):
+        response = test_client.post("/auth/token", json = {"username": "wrong_name", "password":"some_password"})
+        assert response.status_code == 422

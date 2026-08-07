@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from typing import Annotated
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from jwt.exceptions import DecodeError, ExpiredSignatureError, InvalidSignatureError
 from core.cfg import algorithms, secret_key, access_token_expire_minutes, refresh_token_expire_minutes
 from core.models.models import User
 from datetime import datetime, timedelta, timezone
@@ -114,33 +115,45 @@ async def protected_route(user = Depends(get_current_user)):
 
 @router.post("/refresh")
 async def refresh_access_token(refresh_token: RefreshRequest, db = Depends(get_session)):
-    payload = jwt.decode(refresh_token.refresh_token, key = secret_key, algorithms=[algorithms])
     try:
-        payload.get("type") == "refresh_token"
-        user_id = int(payload.get("sub"))
+        payload = jwt.decode(refresh_token.refresh_token, key = secret_key, algorithms=[algorithms])
+        try:
+            token_type = payload.get("type") == "refresh_token"
+            if token_type is False:
+                raise HTTPException(
+                                status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Invalid refresh token"
+                            )
+            user_id = int(payload.get("sub"))
 
-        query = select(User).where(User.id == user_id)
-        result = await db.execute(query)
-        user_obj = result.scalar_one_or_none()
+            query = select(User).where(User.id == user_id)
+            result = await db.execute(query)
+            user_obj = result.scalar_one_or_none()
 
-        if user_obj is None:
+            if user_obj is None:
+                raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+            access_token_expires = timedelta(minutes=int(access_token_expire_minutes))
+            access_token = create_jwt(
+            token_type = "access_token", data={"sub": user_obj.email, "id": user_obj.id}, 
+            expires_delta=access_token_expires)
+
+            return {
+                "access_token": access_token,
+                "token_type": "bearer"
+            }
+        
+        except InvalidTokenError:
             raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-
-        access_token_expires = timedelta(minutes=int(access_token_expire_minutes))
-        access_token = create_jwt(
-        token_type = "access_token", data={"sub": user_obj.email, "id": user_obj.id}, 
-        expires_delta=access_token_expires)
-
-        return {
-            "access_token": access_token,
-            "token_type": "bearer"
-        }
-    
-    except InvalidTokenError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
-        )
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token"
+            )
+    except DecodeError:
+        raise HTTPException(status_code=401, detail="Wrong token")
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except InvalidSignatureError:
+        raise HTTPException(status_code=401, detail="Wrong token")
