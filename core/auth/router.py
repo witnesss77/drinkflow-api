@@ -8,7 +8,7 @@ from core.models.models import User
 from datetime import datetime, timedelta, timezone
 import bcrypt
 from passlib.context import CryptContext
-from core.models.schemas import CreateUser, Token
+from core.models.schemas import CreateUser, Token, RefreshRequest
 from core.models.database import get_session
 import jwt
 from jwt.exceptions import InvalidTokenError
@@ -91,6 +91,8 @@ async def create_user(request: CreateUser, db = Depends(get_session)):
             detail = "Email already exists in the system"
         )
     
+    return {"id":user.id, "role": user.role, "username": user.name}
+    
 def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     payload = jwt.decode(token, key = secret_key, algorithms=[algorithms])
     if payload.get("type") == "access_token":
@@ -111,8 +113,8 @@ async def protected_route(user = Depends(get_current_user)):
     return user
 
 @router.post("/refresh")
-async def refresh_access_token(refresh_token: str, db = Depends(get_session)):
-    payload = jwt.decode(refresh_token, key = secret_key, algorithms=[algorithms])
+async def refresh_access_token(refresh_token: RefreshRequest, db = Depends(get_session)):
+    payload = jwt.decode(refresh_token.refresh_token, key = secret_key, algorithms=[algorithms])
     try:
         payload.get("type") == "refresh_token"
         user_id = int(payload.get("sub"))

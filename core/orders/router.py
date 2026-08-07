@@ -59,7 +59,7 @@ async def set_orders(request: CreateOrder, db = Depends(get_session)):
             detail="Order already exists or unique constraint violated"
         )
 
-    return {"status": status.HTTP_201_CREATED, "message": "Order created successfully"}
+    return order
 
 @router.patch("/{order_id:int}/payment")
 async def update_order(order_id, db = Depends(get_session)):
@@ -92,8 +92,11 @@ async def update_order(order_id, db = Depends(get_session)):
 @router.patch("/{order_id:int}/change_status")
 async def update_order_status(request : UpdateOrderStatus, order_id, db = Depends(get_session), requested_user = Depends(get_current_user)):
     user_ = select(User).where(User.id == requested_user['id']).where(User.role == "manager" or User.role == "admin")
+    query = await db.execute(user_)
+    res = query.scalar_one_or_none()
+
     if user_ is None:
-        return 'invalid user or role not allowed'
+        raise HTTPException(status_code=403, detail="role is not allowed")
     
     query = select(Order).where(Order.id == order_id)
     result = await db.execute(query)

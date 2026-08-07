@@ -101,3 +101,6 @@ class CreateWarehouse(BaseModel):
 class UpdateWarehouse(BaseModel):
     name: str | None = None
     address: str | None = None
+
+class RefreshRequest(BaseModel):
+    refresh_token: str 
