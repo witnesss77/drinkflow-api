@@ -7,12 +7,6 @@ import json
 import uuid
 
 
-def mock_get_current_user():
-    return {"username": "manager", "id": 8}
-
-app.dependency_overrides[get_current_user] = mock_get_current_user
-
-
 class TestDrinkAPI:
     def test_get_drinks(self, test_client):
         response = test_client.get("/drinks")
@@ -27,13 +21,13 @@ class TestDrinkAPI:
         assert response.status_code == 200
 
 
-    def test_set_drinks(self, test_client):
+    def test_set_drinks(self, test_client, create_factory):
         obj = {
         "name": "test",
         "desc": "none",
         "alcoholic": True,
         "price": 111,
-        "factory_id": 1,
+        "factory_id": create_factory,
         }
 
         response = test_client.post("/drinks", json=obj)
@@ -63,13 +57,13 @@ class TestDrinkAPI:
         assert response.status_code == 200
 
 
-    def test_patch_drinks(self, test_client: TestClient):
+    def test_patch_drinks(self, test_client: TestClient, create_factory):
         obj = {
         "name": "test",
         "desc": "none",
         "alcoholic": True,
         "price": 111,
-        "factory_id": 1,
+        "factory_id": create_factory,
         }
 
         response = test_client.post("/drinks", json=obj)
@@ -81,13 +75,14 @@ class TestDrinkAPI:
         assert response.status_code == 200
 
 
-    def test_delete_drinks(self, test_client):
+    def test_delete_drinks(self, test_client, create_factory):
+
         obj = {
                 "name": "test",
                 "desc": "none",
                 "alcoholic": True,
                 "price": 111,
-                "factory_id": 1,
+                "factory_id": create_factory,
                 }
 
         response = test_client.post("/drinks", json=obj)
@@ -255,8 +250,8 @@ class TestOrdersAPI:
         assert response.status_code == 200
 
     
-    def test_set_order(self, test_client):
-        obj = {"user_id": 2, "warehouse_id": 2}
+    def test_set_order(self, test_client, create_user, create_warehouse):
+        obj = {"user_id": create_user, "warehouse_id": create_warehouse}
         
         response = test_client.post("/orders", json = obj)
         print(response.text)
@@ -333,11 +328,10 @@ class TestOrdersAPI:
         assert request.status_code == 200
 
 
-    @pytest.mark.parametrize("item_id, payload", 
-            [
-                (9, {"quantity": 1, "price_per_item": 100})
-            ])
-    def test_change_item_quantity(self, test_client: TestClient, item_id, payload):
+
+    def test_change_item_quantity(self, test_client: TestClient, create_order_item):
+        item_id = create_order_item
+        payload = {"quantity": 1, "price_per_item": 100}
         response = test_client.patch(f"/orders/order_items/{item_id}", json=payload)
         assert response.status_code == 200
 
