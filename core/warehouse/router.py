@@ -4,73 +4,23 @@ from sqlalchemy.exc import IntegrityError
 from core.models.schemas import CreateWarehouse, UpdateWarehouse
 from sqlalchemy import select
 from core.models.models import Warehouse
+from core.dependencies import get_warehouse_service
 
 router = APIRouter(prefix = "/warehouses")
 
 
 @router.get("")
-async def get_warehouses(db = Depends(get_session)):
-    query = select(Warehouse)
-    result = await db.execute(query)
-    return result.scalars().all()
+async def get_warehouses(service = Depends(get_warehouse_service)):
+    return await service.get_warehouses()
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def create_warehouse(request: CreateWarehouse, db = Depends(get_session)):
-    warehouse = Warehouse(
-        name = request.name,
-        address = request.address
-    )
-    
-    try:
-        db.add(warehouse)
-        await db.commit()
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail="Warehouse already exists or unique constraint violated"
-        )
-    
-    return warehouse
+async def create_warehouse(request: CreateWarehouse, service = Depends(get_warehouse_service)):
+    return await service.set_warehouse(request)
 
 @router.patch("/{warehouse_id:int}")
-async def update_warehouse(warehouse_id, update: UpdateWarehouse, db = Depends(get_session)):
-    query = select(Warehouse).where(Warehouse.id == warehouse_id)
-    result = await db.execute(query)
-    warehouse = result.scalar_one_or_none()
-
-    if warehouse is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Warehouse doesn't exist"
-        )
-
-    for k,v in update.model_dump(exclude_unset=True).items():
-        if hasattr(warehouse, k):
-            setattr(warehouse, k, v)
-    try:
-        await db.commit()
-        await db.refresh(warehouse)
-        return warehouse
-    
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Database error")
+async def update_warehouse(warehouse_id, update: UpdateWarehouse, service = Depends(get_warehouse_service)):
+    return await service.update_warehouse(update, warehouse_id)
 
 @router.delete("/{warehouse_id:int}")
-async def delete_warehouse(warehouse_id, db = Depends(get_session)):
-    query = select(Warehouse).where(Warehouse.id == warehouse_id)
-    result = await db.execute(query)
-    warehouse = result.scalar_one_or_none()
-
-    if warehouse is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Warehouse doesnt exist"
-        )
-    try:
-        await db.delete(warehouse)
-        await db.commit()
-    except IntegrityError:
-        raise HTTPException(status_code=409, detail="Warehouse has active orders, undeletable")
-    return {"status": status.HTTP_200_OK, "message": "Warehouse deleted successfully"}
+async def delete_warehouse(warehouse_id, service = Depends(get_warehouse_service)):
+    return await service.delete_warehouse(warehouse_id)

@@ -3,8 +3,9 @@ from core.models.database import get_session
 from sqlalchemy.exc import IntegrityError
 from core.models.schemas import CreateOrder,CreateOrderItem, UpdateOrderItem, UpdateOrderStatus
 from sqlalchemy import select
-from core.models.models import Order, OrderItem, User, Stock
-from core.service.order import OrderService
+from core.dependencies import get_order_service
+from core.models.models import Order, OrderItem, User
+from core.orders.service import OrderLogicService
 from core.auth.router import get_current_user
 
 router = APIRouter(prefix = "/orders")
@@ -16,114 +17,26 @@ async def get_orders(
     warehouse_id: int | None = None,
     status: str | None = None,
     is_paid: bool | None = None,
-    db = Depends(get_session)):
+    service = Depends(get_order_service)):
 
-    query = select(Order)
-
-    if user_id:
-        query = query.where(Order.user_id == user_id)
-    if warehouse_id:
-        query = query.where(Order.warehouse_id == warehouse_id)
-    if status:
-        query = query.where(Order.status == status)
-    if is_paid is not None:
-        query = query.where(Order.is_paid == is_paid)
-        
-    if page:
-        items_offset = (page - 1) * 10
-        query = query.offset(items_offset).limit(10)
-        if query is None:
-            query = select(Order).offset(items_offset).limit(10)
-        result = await db.execute(query)
-        return result.scalars().all()
-    else:
-        result = await db.execute(query)
-        return result.scalars().all()
+    return await service.get_orders(page, user_id, warehouse_id, status, is_paid)
+    
 
 @router.post("", status_code = status.HTTP_201_CREATED)
-async def set_orders(request: CreateOrder, db = Depends(get_session)):
-    order = Order(
-        user_id = request.user_id,
-        warehouse_id = request.warehouse_id,
-        status = "created",
-        is_paid = False
-    )
-
-    try:
-        db.add(order)
-        await db.commit()
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail="Order already exists or unique constraint violated"
-        )
-
-    return order
+async def set_orders(request: CreateOrder, service = Depends(get_order_service)):
+    return await service.set_order(request)
 
 @router.patch("/{order_id:int}/payment")
-async def update_order(order_id, db = Depends(get_session)):
-    query = select(Order).where(Order.id == order_id)
-    result = await db.execute(query)
-    order = result.scalar_one_or_none()
-    query2 = select(OrderItem).where(OrderItem.order_id == order.id)
-    result2 = await db.execute(query2)
-    items = result2.scalars().all()
-
-    if order is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Order not found"
-        )
-    
-    if items is None:
-        raise HTTPException(status_code=409, detail="order is empty")
-    
-    if order.is_paid == True or order.status == "paid":
-        raise HTTPException(status_code=409, detail="order is already paid")
-    
-    order.is_paid = True
-    order.status = "paid"
-
-    await db.commit()
-    await db.refresh(order)
-    return order
+async def update_order(order_id, service = Depends(get_order_service)):
+    return await service.update_order_payment(order_id)
 
 @router.patch("/{order_id:int}/change_status")
-async def update_order_status(request : UpdateOrderStatus, order_id, db = Depends(get_session), requested_user = Depends(get_current_user)):
-    user_ = select(User).where(User.id == requested_user['id']).where(User.role == "manager" or User.role == "admin")
-    query = await db.execute(user_)
-    res = query.scalar_one_or_none()
+async def update_order_status(request: UpdateOrderStatus, order_id, requested_user = Depends(get_current_user), service = Depends(get_order_service)):
+    return await service.update_order_status(request, order_id, requested_user)
 
-    if user_ is None:
-        raise HTTPException(status_code=403, detail="role is not allowed")
-    
-    query = select(Order).where(Order.id == order_id)
-    result = await db.execute(query)
-    order = result.scalar_one_or_none()
-    query2 = select(OrderItem).where(OrderItem.order_id == order.id)
-    result2 = await db.execute(query2)
-    items = result2.scalars().all()
-
-    if order is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Order not found"
-        )
-    
-    if items is None:
-        raise HTTPException(status_code=409, detail="order is empty")
-    
-    order.status = request.status
-    order.is_paid = request.is_paid
-
-    await db.commit()
-    await db.refresh(order)
-    return order
-    
 @router.delete("/{order_id:int}")
 async def delete_order(order_id, db = Depends(get_session)):
-    return await OrderService.cancel_order(order_id, db)
+    return await OrderLogicService.cancel_order(order_id, db)
     
 
 @router.get("/order_items")
@@ -133,27 +46,13 @@ async def get_items(
     drink_id: int | None = None,
     quantity: int | None = None,
     pricier: int | None = None,
-    db = Depends(get_session)):
-    query = select(OrderItem)
+    service = Depends(get_order_service)):
 
-    if order_id:
-        query = query.where(OrderItem.order_id == order_id)
-    if user_id:
-        query = query.where(OrderItem.user_id == user_id)
-    if drink_id:
-        query = query.where(OrderItem.drink_id == drink_id)
-    if quantity:
-        query = query.where(OrderItem.quantity == quantity)
-    if pricier:
-        query = query.where(OrderItem.price_per_item >= pricier)
-
-    query = query.order_by(OrderItem.id)
-    result = await db.execute(query)
-    return result.scalars().all()
+    return await service.get_items(order_id, user_id, drink_id, quantity, pricier)
 
 @router.post("/order_items")
 async def set_items(warehouse_id: int, request: CreateOrderItem, db = Depends(get_session)):
-    return await OrderService.add_order_item(request, warehouse_id, db)
+    return await OrderLogicService.add_order_item(request, warehouse_id, db)
 
 
 @router.patch("/order_items/{item_id:int}")
@@ -168,21 +67,9 @@ async def update_items(item_id, request: UpdateOrderItem, db = Depends(get_sessi
                 detail="Item not found"
             )
 
-    return await OrderService.change_quantity(item_id, request, db)
+    return await OrderLogicService.change_quantity(item_id, request, db)
 
 
 @router.delete("/order_items/{item_id:int}")
-async def delete_item(item_id, db = Depends(get_session)):
-    query = select(OrderItem).where(OrderItem.id == item_id)
-    result = await db.execute(query)
-    item = result.scalar_one_or_none()
-
-    if item is None:
-        raise HTTPException(
-            status_code=404,
-            detail="OrderItem doesnt exist"
-        )
-    
-    await db.delete(item)
-    await db.commit()
-    return {"status": status.HTTP_200_OK, "message": "Order item deleted successfully"}
+async def delete_item(item_id, service = Depends(get_order_service)):
+    return await service.delete_item(item_id)

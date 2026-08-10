@@ -3,10 +3,13 @@ from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, Depends, status
 from core.models.models import User, Stock, Warehouse, Order, OrderItem
 from core.models.database import get_session
+from fastapi import HTTPException
+from core.orders.repository import OrdersRepository
+from cache.cache import RedisCache
 
 
 
-class OrderService:
+class OrderLogicService:
     async def add_order_item(request, warehouse_id: int, db):
         query = select(User).options(selectinload(User.orders)).where(User.id == request.user_id)
         result = await db.execute(query)
@@ -124,3 +127,27 @@ class OrderService:
         await db.refresh(item)
 
         return item
+
+
+class OrderService:
+    def __init__(self, db):
+        self.repository = OrdersRepository(db)
+        self.redis = RedisCache
+
+    async def get_orders(self, page, user_id, warehouse_id, status, is_paid):
+        return await self.repository.get_orders(page, user_id, warehouse_id, status, is_paid)
+
+    async def set_order(self, request):
+        return await self.repository.set_order(request)
+
+    async def update_order_payment(self, order_id):
+        return await self.repository.update_order_payment(order_id)
+
+    async def update_order_status(self, request, order_id, requested_user):
+        return await self.repository.update_order_status(request, order_id, requested_user)
+
+    async def get_items(self, order_id,user_id,drink_id,quantity,pricier):
+        return await self.repository.get_items(order_id, user_id, drink_id, quantity, pricier)
+
+    async def delete_item(self, item_id):
+        return await self.repository.delete_item(item_id)
