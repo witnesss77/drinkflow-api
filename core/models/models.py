@@ -1,8 +1,13 @@
 from sqlalchemy import Integer, String, ForeignKey, Boolean
-from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column, class_mapper
 from sqlalchemy.schema import UniqueConstraint
 from typing import List
 from sqlalchemy.orm import DeclarativeBase
+
+
+def model_to_dict(model, obj):
+    columns = [c.key for c in class_mapper(model.__class__).columns]
+    return {c: getattr(model, c) for c in columns}
 
 class Base(DeclarativeBase):
     pass

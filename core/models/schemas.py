@@ -1,6 +1,18 @@
 from pydantic import BaseModel, Field, EmailStr
 from enum import Enum
 
+
+class DrinkSchema(BaseModel):
+    id: int
+    name: str
+    desc: str
+    alcoholic: bool
+    price: int 
+    factory_id: int 
+
+    class Config:
+        from_attributes = True
+
 class CreateDrink(BaseModel):
     name: str
     desc: str
