@@ -9,6 +9,7 @@ class DrinkService:
         self.redis = RedisCache(redis_url=cache_redis_url, cache_ttl_seconds=cache_ttl)
         self.key = cache_key
 
+
     async def get_drinks(self, 
         page = None,
         name = None,
@@ -18,7 +19,17 @@ class DrinkService:
         factory_id = None):
 
 
-        cached_drinks = self.redis.get(self.key)
+        params = {
+        "page": page,
+        "name": name,
+        "desc": desc,
+        "alcoholic": alcoholic,
+        "price": price,
+        "factory_id": factory_id,
+        }
+
+        key = f"{self.key}:{params}"
+        cached_drinks = self.redis.get(key)
         if cached_drinks:
             return cached_drinks
 
@@ -26,16 +37,16 @@ class DrinkService:
         cache = [DrinkSchema.model_validate(item).model_dump() for item in items]
         self.redis.set(self.key, cache)
 
-        return await self.repository.get_all_filter(page, name,desc,alcoholic,price, factory_id)
+        return await self.repository.get_all_filter(page, name, desc, alcoholic, price, factory_id)
 
     async def set_drink(self, request):
-        self.redis.delete(self.key)
+        self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.set_drink(request)
 
     async def update_drink(self, drink_id, request):
-        self.redis.delete(self.key)
+        self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.update_drink(drink_id, request)
 
     async def delete_drink(self, drink_id):
-        self.redis.delete(self.key)
+        self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.delete_drink(drink_id)

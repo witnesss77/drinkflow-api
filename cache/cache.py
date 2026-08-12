@@ -15,3 +15,9 @@ class RedisCache:
 
     def delete(self, key: str):
         self.redis.delete(key)
+
+    def delete_by_pattern(self, pattern: str):
+        keys = self.redis.keys(pattern)
+
+        if keys:
+            self.redis.delete(*keys)
