@@ -4,7 +4,7 @@ from core.models.schemas import DrinkSchema
 from cache.cache import RedisCache
 
 class DrinkService:
-    def __init__(self, db, cache_redis_url:str, cache_ttl, cache_key):
+    def __init__(self, db, cache_redis_url: str, cache_ttl, cache_key):
         self.repository = DrinkRepository(db)
         self.redis = RedisCache(redis_url=cache_redis_url, cache_ttl_seconds=cache_ttl)
         self.key = cache_key

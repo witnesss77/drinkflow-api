@@ -13,6 +13,18 @@ class DrinkSchema(BaseModel):
     class Config:
         from_attributes = True
 
+class StockSchema(BaseModel):
+    id: int
+    drink_id: int
+    warehouse_id: int 
+    quantity: int
+    reserved_quantity: int
+
+
+    class Config:
+        from_attributes = True
+
+
 class CreateDrink(BaseModel):
     name: str
     desc: str
