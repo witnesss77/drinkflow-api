@@ -20,7 +20,6 @@ class DrinkService:
 
 
         params = {
-        "page": page,
         "name": name,
         "desc": desc,
         "alcoholic": alcoholic,

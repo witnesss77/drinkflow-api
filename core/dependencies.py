@@ -1,6 +1,6 @@
 from core.models.database import get_session
 from fastapi import Depends
-from core.cfg import cache_ttl_seconds, redis_url, drink_cache_key, stocks_cache_key
+from core.cfg import cache_ttl_seconds, redis_url, drink_cache_key, stocks_cache_key, order_cache_key
 
 from core.drinks.service import DrinkService
 from core.factories.service import FactoryService
@@ -22,4 +22,4 @@ def get_warehouse_service(db = Depends(get_session)):
     return WarehouseService(db)
 
 def get_order_service(db = Depends(get_session)):
-    return OrderService(db)
+    return OrderService(db, redis_url, cache_ttl_seconds, cache_key = order_cache_key)

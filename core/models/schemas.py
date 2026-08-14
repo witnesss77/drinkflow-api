@@ -24,6 +24,15 @@ class StockSchema(BaseModel):
     class Config:
         from_attributes = True
 
+class OrderSchema(BaseModel):
+    id: int
+    user_id: int 
+    warehouse_id: int
+    status:str
+    is_paid:bool
+
+    class Config:
+        from_attributes = True
 
 class CreateDrink(BaseModel):
     name: str

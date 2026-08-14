@@ -1,8 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from fastapi import HTTPException, Depends, status
-from core.models.models import User, Stock, Warehouse, Order, OrderItem
-from core.models.database import get_session
+from fastapi import HTTPException, status
+from core.models.schemas import OrderSchema
+from core.models.models import User, Stock, Order, OrderItem
 from fastapi import HTTPException
 from core.orders.repository import OrdersRepository
 from cache.cache import RedisCache
@@ -130,24 +130,46 @@ class OrderLogicService:
 
 
 class OrderService:
-    def __init__(self, db):
+    def __init__(self, db, redis_url, cache_ttl, cache_key):
         self.repository = OrdersRepository(db)
-        self.redis = RedisCache
+        self.redis = RedisCache(redis_url, cache_ttl)
+        self.key = cache_key
 
     async def get_orders(self, page, user_id, warehouse_id, status, is_paid):
+
+        params = {
+        "user_id": user_id,
+        "warehouse_id": warehouse_id,
+        "status": status,
+        "is_paid": is_paid,
+        }
+        
+        key = f"{self.key}:{params}"
+
+        cached_orders = self.redis.get(key)
+        if cached_orders:
+            return cached_orders
+                
+        items = await self.repository.get_orders()
+        cache = [OrderSchema.model_validate(item).model_dump() for item in items]
+        self.redis.set(key, cache)
         return await self.repository.get_orders(page, user_id, warehouse_id, status, is_paid)
 
     async def set_order(self, request):
+        self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.set_order(request)
 
     async def update_order_payment(self, order_id):
+        self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.update_order_payment(order_id)
 
     async def update_order_status(self, request, order_id, requested_user):
+        self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.update_order_status(request, order_id, requested_user)
 
     async def get_items(self, order_id,user_id,drink_id,quantity,pricier):
         return await self.repository.get_items(order_id, user_id, drink_id, quantity, pricier)
 
     async def delete_item(self, item_id):
+        self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.delete_item(item_id)
