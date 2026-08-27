@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from core.messages.rabbitmq import connect_rabbitmq, declare_exchange, declare_queue
 from core.drinks.router import router as drinks_router
 from core.factories.router import router as factories_router
 from core.warehouse.router import router as warehouses_router
@@ -6,7 +8,22 @@ from core.stock.router import router as stocks_router
 from core.orders.router import router as orders_router
 from core.auth.router import router as auth_router
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    connection = await connect_rabbitmq()
+    channel = await connection.channel()
+    exchange = await declare_exchange(channel)
+    await declare_queue(channel, exchange)
+    
+    app.state.orders_exchange = exchange
+
+
+    yield 
+    await connection.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(drinks_router, tags = ["Drinks"])
 app.include_router(factories_router, tags = ["Factories"])

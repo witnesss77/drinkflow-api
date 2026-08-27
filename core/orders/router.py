@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, HTTPException, Depends
+from fastapi import APIRouter, status, HTTPException, Depends, Request
 from core.models.database import get_session
 from sqlalchemy.exc import IntegrityError
 from core.models.schemas import CreateOrder,CreateOrderItem, UpdateOrderItem, UpdateOrderStatus
@@ -23,8 +23,8 @@ async def get_orders(
     
 
 @router.post("", status_code = status.HTTP_201_CREATED)
-async def set_orders(request: CreateOrder, service = Depends(get_order_service)):
-    return await service.set_order(request)
+async def set_orders(payload: CreateOrder, request: Request, service = Depends(get_order_service)):
+    return await service.set_order(payload, request)
 
 @router.patch("/{order_id:int}/payment")
 async def update_order(order_id, service = Depends(get_order_service)):

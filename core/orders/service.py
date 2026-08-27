@@ -2,6 +2,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 from core.models.schemas import OrderSchema
+from core.messages.rabbitmq import ORDER_ROUTING_KEY
+from core.messages.producer import OrderProducer
 from core.models.models import User, Stock, Order, OrderItem
 from fastapi import HTTPException
 from core.orders.repository import OrdersRepository
@@ -135,7 +137,12 @@ class OrderService:
         self.redis = RedisCache(redis_url, cache_ttl)
         self.key = cache_key
 
-    async def get_orders(self, page, user_id, warehouse_id, status, is_paid):
+    async def get_orders(self, 
+            page = None, 
+            user_id = None, 
+            warehouse_id = None, 
+            status = None, 
+            is_paid = None):
 
         params = {
         "user_id": user_id,
@@ -150,14 +157,18 @@ class OrderService:
         if cached_orders:
             return cached_orders
                 
-        items = await self.repository.get_orders()
+        items = await self.repository.get_orders(page, user_id, warehouse_id, status, is_paid)
         cache = [OrderSchema.model_validate(item).model_dump() for item in items]
         self.redis.set(key, cache)
         return await self.repository.get_orders(page, user_id, warehouse_id, status, is_paid)
 
-    async def set_order(self, request):
+    async def set_order(self, payload, request):
         self.redis.delete_by_pattern(f"{self.key}:*")
-        return await self.repository.set_order(request)
+        order = await self.repository.set_order(payload)
+        producer = OrderProducer(request.app.state.orders_exchange)
+        await producer.created_order(order_id = order.id)
+
+        return order
 
     async def update_order_payment(self, order_id):
         self.redis.delete_by_pattern(f"{self.key}:*")

@@ -32,9 +32,9 @@ class DrinkService:
         if cached_drinks:
             return cached_drinks
 
-        items = await self.repository.get_all()
+        items = await self.repository.get_all_filter(page, name, desc, alcoholic, price, factory_id)
         cache = [DrinkSchema.model_validate(item).model_dump() for item in items]
-        self.redis.set(self.key, cache)
+        self.redis.set(key, cache)
 
         return await self.repository.get_all_filter(page, name, desc, alcoholic, price, factory_id)
 
