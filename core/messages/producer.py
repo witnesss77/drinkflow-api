@@ -38,4 +38,3 @@ class UserProducer:
             routing_key=USER_ROUTING_KEY,
             data = event_data
         )
-        

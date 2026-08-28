@@ -1,10 +1,13 @@
 import asyncio
 import json
+from celery_worker import process_order
 from core.messages.rabbitmq import connect_rabbitmq, declare_queue, declare_exchange, USER_EXCHANGE, USER_ROUTING_KEY, USERS_QUEUE
 
 async def handle_message(message):
     event_data = json.loads(message.body.decode())
     print(f"Получено сообщение: {event_data}")
+    if event_data["event"] == "order.created":
+        process_order.delay(event_data["order_id"])
 
     await message.ack()
 
