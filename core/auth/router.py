@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from typing import Annotated
 from sqlalchemy import select
@@ -9,10 +9,11 @@ from core.models.models import User
 from datetime import datetime, timedelta, timezone
 import bcrypt
 from passlib.context import CryptContext
-from core.models.schemas import CreateUser, Token, RefreshRequest
+from core.models.schemas import CreateUser, RefreshRequest
 from core.models.database import get_session
 import jwt
 from jwt.exceptions import InvalidTokenError
+from core.messages.producer import UserProducer
 
 
 router = APIRouter(prefix='/auth')
@@ -73,16 +74,17 @@ async def login(
             }
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-async def create_user(request: CreateUser, db = Depends(get_session)):
+async def create_user(request: Request, payload: CreateUser, db = Depends(get_session)):
     salt = bcrypt.gensalt()
-    pw = request.password
+    pw = payload.password
     encrypted = pw.encode('utf-8')
     user = User(
-        name = request.name,
-        email = request.email,
+        name = payload.name,
+        email = payload.email,
         hashed_password = bcrypt.hashpw(encrypted, salt).decode('utf-8'),
-        role = request.role
+        role = payload.role
     )
+
     try:
         db.add(user)
         await db.commit()
@@ -91,8 +93,9 @@ async def create_user(request: CreateUser, db = Depends(get_session)):
             status_code=409,
             detail = "Email already exists in the system"
         )
-    
-    return {"id":user.id, "role": user.role, "username": user.name}
+    producer = UserProducer(request.app.state.users_exchange)
+    await producer.created_user(payload.email)
+    return {"id" :user.id, "role": user.role, "username": user.name}
     
 def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     payload = jwt.decode(token, key = secret_key, algorithms=[algorithms])

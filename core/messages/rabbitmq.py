@@ -6,16 +6,30 @@ NOTIFICATIONS_QUEUE = "notifications.order_created"
 ORDER_EXCHANGE = "order"
 ORDER_ROUTING_KEY = "order.created"
 
+USER_ROUTING_KEY = "user.registered"
+USER_EXCHANGE = "user"
+USERS_QUEUE = "users.registered"
+
+
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# зарефакторить чтобы деклейр методы были реально абстрактными 
+
+
+
+
+
+
 
 
 async def connect_rabbitmq():
     return await aio_pika.connect_robust(rabbitmq_url)
 
-async def declare_exchange(channel: AbstractChannel):
-    return await channel.declare_exchange(ORDER_EXCHANGE)
+async def declare_exchange(channel: AbstractChannel, exchange):
+    return await channel.declare_exchange(exchange)
 
-async def declare_queue(channel: AbstractChannel, exchange: AbstractExchange):
-    queue: AbstractQueue = await channel.declare_queue(NOTIFICATIONS_QUEUE, durable=True)
-    await queue.bind(exchange, routing_key=ORDER_ROUTING_KEY)
+async def declare_queue(channel: AbstractChannel, exchange: AbstractExchange, queue_param, routing):
+    queue: AbstractQueue = await channel.declare_queue(queue_param, durable=True)
+    await queue.bind(exchange, routing_key=routing)
 
     return queue

@@ -2,7 +2,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 from core.models.schemas import OrderSchema
-from core.messages.rabbitmq import ORDER_ROUTING_KEY
 from core.messages.producer import OrderProducer
 from core.models.models import User, Stock, Order, OrderItem
 from fastapi import HTTPException

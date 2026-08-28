@@ -1,6 +1,6 @@
 import aio_pika
 from aio_pika.abc import AbstractExchange
-from core.messages.rabbitmq import ORDER_ROUTING_KEY
+from core.messages.rabbitmq import ORDER_ROUTING_KEY, USER_ROUTING_KEY
 import json
 
 
@@ -23,4 +23,19 @@ class OrderProducer:
             routing_key=ORDER_ROUTING_KEY,
             data = event_data)
 
+class UserProducer:
+    def __init__(self, exchange):
+        self.exchange = exchange
+
+    async def created_user(self, user_mail):
+        event_data = {
+            "event": "user.registered",
+            "email": user_mail
+        }
+
+        await publish_json(
+            exchange=self.exchange,
+            routing_key=USER_ROUTING_KEY,
+            data = event_data
+        )
         

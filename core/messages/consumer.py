@@ -1,8 +1,8 @@
 import asyncio
 import json
-from core.messages.rabbitmq import connect_rabbitmq, declare_queue, declare_exchange
+from core.messages.rabbitmq import connect_rabbitmq, declare_queue, declare_exchange, USER_EXCHANGE, USER_ROUTING_KEY, USERS_QUEUE
 
-async def handle_order_created(message):
+async def handle_message(message):
     event_data = json.loads(message.body.decode())
     print(f"Получено сообщение: {event_data}")
 
@@ -13,10 +13,10 @@ async def handle_order_created(message):
 async def main():
     connection = await connect_rabbitmq()
     channel = await connection.channel()
-    exchange = await declare_exchange(channel)
-    queue = await declare_queue(channel, exchange)
+    exchange = await declare_exchange(channel,USER_EXCHANGE)
+    queue = await declare_queue(channel, exchange, USERS_QUEUE, USER_ROUTING_KEY)
 
-    await queue.consume(handle_order_created)
+    await queue.consume(handle_message)
     await asyncio.Future()
     await connection.close()
 
