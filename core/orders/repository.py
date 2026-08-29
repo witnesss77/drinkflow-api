@@ -114,7 +114,7 @@ class OrdersRepository:
         user_id: int | None = None,
         drink_id: int | None = None,
         quantity: int | None = None,
-        pricier: int | None = None):
+        pricier: int | None = None) -> list[OrderItem]:
         query = select(OrderItem)
         
         if order_id:

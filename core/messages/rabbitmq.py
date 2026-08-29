@@ -10,18 +10,6 @@ USER_ROUTING_KEY = "user.registered"
 USER_EXCHANGE = "user"
 USERS_QUEUE = "users.registered"
 
-
-
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# зарефакторить чтобы деклейр методы были реально абстрактными 
-
-
-
-
-
-
-
-
 async def connect_rabbitmq():
     return await aio_pika.connect_robust(rabbitmq_url)
 
