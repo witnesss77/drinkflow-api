@@ -1,6 +1,6 @@
 from celery import Celery
 from core.cfg import rabbitmq_url, redis_url
-from core.models.database import AsyncSessionLocal
+from core.models.database import CelerySessionLocal
 import asyncio
 from core.orders.repository import OrdersRepository
 
@@ -8,7 +8,7 @@ celery = Celery("main", broker=rabbitmq_url, backend=redis_url)
 
 async def process_order_(order_id):
     """считает общую статистику заказа: колво айтемов в заказе + общую цену"""
-    async with AsyncSessionLocal() as db:
+    async with CelerySessionLocal() as db:
         repo = OrdersRepository(db)
 
         order_items = await repo.get_items(order_id)
