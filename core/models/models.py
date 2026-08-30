@@ -70,6 +70,8 @@ class Order(Base):
     warehouse_id: Mapped[int] = mapped_column(Integer, ForeignKey("warehouses.id"), nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="created", nullable=False)
     is_paid: Mapped[bool] = mapped_column(Boolean, default=False)
+    item_count: Mapped[int] = mapped_column(Integer, default=0)
+    total_price: Mapped[int] = mapped_column(Integer, default=0)
 
     items: Mapped[List["OrderItem"]] = relationship(back_populates="order")
     warehouse: Mapped["Warehouse"] = relationship(back_populates="orders")
