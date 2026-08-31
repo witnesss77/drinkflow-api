@@ -29,8 +29,10 @@ class OrderSchema(BaseModel):
     user_id: int 
     warehouse_id: int
     status:str
-    is_paid:bool
-
+    is_paid: bool
+    item_count: int
+    total_price: int
+    
     class Config:
         from_attributes = True
 

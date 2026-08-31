@@ -7,11 +7,16 @@ class RedisCache:
         self.redis = Redis.from_url(url=redis_url, decode_responses = True)
         self.cache_ttl_seconds = cache_ttl_seconds
     
-    def set(self, key: str, value: dict):
+    def set(self, key: str, value):
         self.redis.set(key, json.dumps(value), ex = self.cache_ttl_seconds)
 
     def get(self, key: str):
-        return self.redis.get(key)
+        value = self.redis.get(key)
+
+        if value is None:
+            return None
+
+        return json.loads(value)
 
     def delete(self, key: str):
         self.redis.delete(key)

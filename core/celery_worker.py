@@ -19,17 +19,59 @@ async def process_order_(order_id):
             count += item.quantity
             total_price += item.price_per_item * item.quantity
 
+
         return {
             "order_id": order_id,
             "item_count": count,
             "total_price": total_price
         }
 
+async def changed_order(order_id, price_delta, quantity_delta):
+    """при изменении/удалении ордер айтема меняет общую статистику заказа"""
+    async with CelerySessionLocal() as db:
+        repo = OrdersRepository(db)
+    
+        order = await repo.get_order_by_id(order_id)
+
+    
+        order.item_count += quantity_delta
+        order.total_price += price_delta
+
+        await db.commit()
+
+        return {
+            "order_id": order_id,
+            "item_count": order.item_count,
+            "total_price": order.total_price
+        }
+
+async def deleted_item(order_id, quantity, price_per_item):
+    async with CelerySessionLocal() as db:
+        repo = OrdersRepository(db)
+        
+        order = await repo.get_order_by_id(order_id)
+    
+        
+        order.item_count -= quantity
+        order.total_price -= quantity * price_per_item
+    
+        await db.commit()
+    
+        return {
+            "order_id": order_id,
+            "item_count": order.item_count,
+            "total_price": order.total_price
+        }
+
+    
 @celery.task
 def process_order(order_id):
     return asyncio.run(process_order_(order_id))
 
+@celery.task
+def update_order(order_id, price_delta, quantity_delta):
+    return asyncio.run(changed_order(order_id, price_delta, quantity_delta))
 
 @celery.task
-def user_registrated(email):
-    ...
+def delete_item_from_order(order_id, quantity, price_per_item):
+    return asyncio.run(deleted_item(order_id,quantity,price_per_item))

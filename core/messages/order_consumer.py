@@ -1,6 +1,6 @@
 import asyncio
 import json
-from core.celery_worker import process_order
+from core.celery_worker import process_order, update_order, delete_item_from_order
 from core.messages.rabbitmq import connect_rabbitmq, declare_queue, declare_exchange, ORDER_EXCHANGE, NOTIFICATIONS_QUEUE, ORDER_ROUTING_KEY
 
 async def handle_message(message):
@@ -9,7 +9,22 @@ async def handle_message(message):
     if event_data["event"] == "order.created":
         result = process_order.delay(event_data["order_id"])
         print(result.id)
+    if event_data["event"] == "order.changed_quantity":
+        result = update_order.delay(
+            event_data["order_id"], 
+            event_data["price_delta"], 
+            event_data["quantity_delta"])
 
+        print(result.id)
+
+    if event_data["event"] == "order.deleted_item":
+        result = delete_item_from_order.delay(
+            event_data["order_id"], 
+            event_data["quantity"], 
+            event_data["price_per_item"])
+        
+        print(result.id)
+    
     await message.ack()
 
 
@@ -17,7 +32,7 @@ async def handle_message(message):
 async def main():
     connection = await connect_rabbitmq()
     channel = await connection.channel()
-    exchange = await declare_exchange(channel,ORDER_EXCHANGE)
+    exchange = await declare_exchange(channel, "order")
     queue = await declare_queue(channel, exchange, NOTIFICATIONS_QUEUE, ORDER_ROUTING_KEY)
 
     await queue.consume(handle_message)

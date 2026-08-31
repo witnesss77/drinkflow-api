@@ -56,7 +56,7 @@ async def set_items(request: Request, warehouse_id: int, payload: CreateOrderIte
 
 
 @router.patch("/order_items/{item_id:int}")
-async def update_items(item_id, request: UpdateOrderItem, db = Depends(get_session)):
+async def update_items(item_id, payload: UpdateOrderItem, request: Request, db = Depends(get_session)):
     query = select(OrderItem).where(OrderItem.id == item_id)
     result = await db.execute(query)
     item = result.scalar_one_or_none()
@@ -67,9 +67,9 @@ async def update_items(item_id, request: UpdateOrderItem, db = Depends(get_sessi
                 detail="Item not found"
             )
 
-    return await OrderLogicService.change_quantity(item_id, request, db)
+    return await OrderLogicService.change_quantity(item_id, payload, request, db)
 
 
 @router.delete("/order_items/{item_id:int}")
-async def delete_item(item_id, service = Depends(get_order_service)):
-    return await service.delete_item(item_id)
+async def delete_item(item_id, request: Request, service = Depends(get_order_service)):
+    return await service.delete_item(item_id, request)

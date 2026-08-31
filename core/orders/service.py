@@ -53,8 +53,9 @@ class OrderLogicService:
 
         db.add(new_item)
         await db.commit()
+        
         producer = OrderProducer(request.app.state.orders_exchange)
-        await producer.created_order(order_id = order.id)
+        await producer.changed_order_quantity(order_id = order.id, price_delta=new_item.price_per_item, quantity_delta=new_item.quantity)
         return new_item
     
 
@@ -101,33 +102,53 @@ class OrderLogicService:
         stock.quantity += item.quantity
         await db.delete(item)
         await db.commit()
+        
         return "done"
     
-    async def change_quantity(item_id, request, db):
+    async def change_quantity(item_id, payload, request, db):
         query = select(OrderItem).where(OrderItem.id == item_id)
         result = await db.execute(query)
         item = result.scalar_one_or_none()
 
-        query = select(Stock).where(item.drink_id == Stock.drink_id)
+        query = select(Stock).where(Stock.drink_id == item.drink_id)
         res = await db.execute(query)
         stock = res.scalar_one_or_none()
 
         old_quantity = item.quantity
-        new_quantity = request.quantity
+        old_price = item.price_per_item
 
-        delta = new_quantity - old_quantity
+        new_quantity = payload.quantity
+        new_price = payload.price_per_item
 
-        if delta > stock.quantity:
-            raise HTTPException(status_code=409, detail="not enough in stock")
+        quantity_delta = new_quantity - old_quantity
 
-        stock.quantity -= delta
-        stock.reserved_quantity += delta
+        if quantity_delta > stock.quantity:
+            raise HTTPException(
+                status_code=409,
+                detail="not enough in stock"
+            )
+
+        old_total = old_quantity * old_price
+        new_total = new_quantity * new_price
+
+        price_delta = new_total - old_total
+
+        stock.quantity -= quantity_delta
+        stock.reserved_quantity += quantity_delta
 
         item.quantity = new_quantity
-        item.price_per_item = request.price_per_item
+        item.price_per_item = new_price
 
         await db.commit()
         await db.refresh(item)
+
+        producer = OrderProducer(request.app.state.orders_exchange)
+
+        await producer.changed_order_quantity(
+            order_id=item.order_id,
+            price_delta=price_delta,
+            quantity_delta=quantity_delta
+            )
 
         return item
 
@@ -143,13 +164,17 @@ class OrderService:
             user_id = None, 
             warehouse_id = None, 
             status = None, 
-            is_paid = None):
+            is_paid = None,
+            item_count = None,
+            total_price = None):
 
         params = {
         "user_id": user_id,
         "warehouse_id": warehouse_id,
         "status": status,
         "is_paid": is_paid,
+        "item_count": item_count,
+        "total_price": total_price
         }
         
         key = f"{self.key}:{params}"
@@ -161,7 +186,7 @@ class OrderService:
         items = await self.repository.get_orders(page, user_id, warehouse_id, status, is_paid)
         cache = [OrderSchema.model_validate(item).model_dump() for item in items]
         self.redis.set(key, cache)
-        return await self.repository.get_orders(page, user_id, warehouse_id, status, is_paid)
+        return cache
 
     async def set_order(self, payload, request):
         self.redis.delete_by_pattern(f"{self.key}:*")
@@ -182,6 +207,10 @@ class OrderService:
     async def get_items(self, order_id,user_id,drink_id,quantity,pricier):
         return await self.repository.get_items(order_id, user_id, drink_id, quantity, pricier)
 
-    async def delete_item(self, item_id):
+    async def delete_item(self, item_id, request):
         self.redis.delete_by_pattern(f"{self.key}:*")
+        item = await self.repository.get_item_by_id(item_id)
+
+        producer = OrderProducer(request.app.state.orders_exchange)
+        await producer.deleted_order_item(item.order_id, item.quantity, item.price_per_item)
         return await self.repository.delete_item(item_id)

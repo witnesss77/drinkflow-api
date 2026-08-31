@@ -51,6 +51,11 @@ class OrdersRepository:
         
         return order
 
+    async def get_order_by_id(self, order_id) -> Order:
+        query = select(Order).where(Order.id == order_id).with_for_update()
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
     async def update_order_payment(self, order_id):
         query = select(Order).where(Order.id == order_id)
         result = await self.db.execute(query)
@@ -131,6 +136,11 @@ class OrdersRepository:
         query = query.order_by(OrderItem.id)
         result = await self.db.execute(query)
         return result.scalars().all()
+
+    async def get_item_by_id(self, item_id) -> Order:
+        query = select(OrderItem).where(OrderItem.id == item_id).with_for_update()
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
 
     async def delete_item(self, item_id):
         query = select(OrderItem).where(OrderItem.id == item_id)
