@@ -10,7 +10,6 @@ from datetime import datetime, timedelta, timezone
 import bcrypt
 from passlib.context import CryptContext
 from core.models.schemas import CreateUser, RefreshRequest, CreateUser_admin
-from core.models.schemas import CreateUser, RefreshRequest, CreateUser_admin
 from core.models.database import get_session
 import jwt
 from jwt.exceptions import InvalidTokenError
@@ -73,31 +72,9 @@ async def login(
             "refresh_token": refresh_token,
             }
 
-@router.post("/register/admin", status_code=status.HTTP_201_CREATED)
-async def create_user_(payload: CreateUser, db = Depends(get_session)):
-    salt = bcrypt.gensalt()
-    pw = payload.password
-    encrypted = pw.encode('utf-8')
-    user = User(
-        name = payload.name,
-        email = payload.email,
-        hashed_password = bcrypt.hashpw(encrypted, salt).decode('utf-8'),
-    )
-
-    try:
-        db.add(user)
-        await db.commit()
-    except IntegrityError:
-        return HTTPException(
-            status_code=409,
-            detail = "Email already exists in the system"
-        )
-
-    return {"id" :user.id, "role": user.role, "username": user.name}
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def create_user(payload: CreateUser, db = Depends(get_session)):
-async def create_user(payload: CreateUser, db = Depends(get_session)):
     salt = bcrypt.gensalt()
     pw = payload.password
     encrypted = pw.encode('utf-8')
@@ -105,6 +82,7 @@ async def create_user(payload: CreateUser, db = Depends(get_session)):
         name = payload.name,
         email = payload.email,
         hashed_password = bcrypt.hashpw(encrypted, salt).decode('utf-8'),
+        role = "user"
     )
 
     try:
@@ -133,9 +111,9 @@ def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
         return "invalid token type"
 
 async def admin_check(
-    res=Depends(get_current_user),
-    db=Depends(get_session)
-):
+    res = Depends(get_current_user),
+    db = Depends(get_session)):
+
     query = select(User).where(User.id == int(res["id"]))
     result = await db.execute(query)
     user = result.scalar_one_or_none()
@@ -153,27 +131,7 @@ async def admin_check(
         )
 
     return user
-async def admin_check(
-    res=Depends(get_current_user),
-    db=Depends(get_session)
-):
-    query = select(User).where(User.id == int(res["id"]))
-    result = await db.execute(query)
-    user = result.scalar_one_or_none()
 
-    if user is None:
-        raise HTTPException(
-            status_code=401,
-            detail="User not found"
-        )
-
-    if user.role != "admin":
-        raise HTTPException(
-            status_code=403,
-            detail="Admin access required"
-        )
-
-    return user
 
 @router.get("/me")
 async def protected_route(user = Depends(get_current_user)):
@@ -233,6 +191,7 @@ async def create_user_(payload: CreateUser, db = Depends(get_session), admin = D
         name = payload.name,
         email = payload.email,
         hashed_password = bcrypt.hashpw(encrypted, salt).decode('utf-8'),
+        role = payload.role
     )
 
     try:

@@ -84,11 +84,11 @@ class OrdersRepository:
         return order
 
     async def update_order_status(self, request, order_id, requested_user):
-        user_ = select(User).where(User.id == requested_user['id']).where(User.role == "manager" or User.role == "admin")
+        user_ = select(User).where(User.id == int(requested_user['id'])).where(User.role == "manager" or User.role == "admin")
         query = await self.db.execute(user_)
         res = query.scalar_one_or_none()
         
-        if user_ is None:
+        if res is None:
             raise HTTPException(status_code=403, detail="role is not allowed")
             
         query = select(Order).where(Order.id == order_id)

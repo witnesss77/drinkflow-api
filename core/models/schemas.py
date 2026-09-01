@@ -92,10 +92,9 @@ class UpdateOrderStatus(BaseModel):
 
 class CreateOrderItem(BaseModel):
     order_id: int = Field(...)
-    user_id: int = Field(...)
     drink_id: int = Field(...)
     quantity: int = Field(..., gt=0)
-    price_per_item: int = Field(..., gt=0)
+
 
 
 class UpdateOrderItem(BaseModel):

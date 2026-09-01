@@ -1,9 +1,10 @@
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Depends
+from core.auth.router import get_current_user
 from core.models.schemas import OrderSchema
 from core.messages.producer import OrderProducer
-from core.models.models import User, Stock, Order, OrderItem
+from core.models.models import User, Stock, Order, OrderItem, Drink, Warehouse
 from fastapi import HTTPException
 from core.orders.repository import OrdersRepository
 from cache.cache import RedisCache
@@ -11,23 +12,27 @@ from cache.cache import RedisCache
 
 
 class OrderLogicService:
-    async def add_order_item(request, payload, warehouse_id: int, db):
-        query = select(User).options(selectinload(User.orders)).where(User.id == payload.user_id)
+    async def add_order_item(request, payload, db, user = Depends(get_current_user)):
+        query = select(User).options(selectinload(User.orders)).where(User.id == int(user['id']))
         result = await db.execute(query)
         user = result.scalar_one_or_none()
 
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
-        
+
         query = select(Order).where(Order.id == payload.order_id, Order.user_id == payload.user_id)
         result = await db.execute(query)
         order = result.scalar_one_or_none()
 
         if order is None:
             raise HTTPException(status_code=404, detail="Order not found")
+        
+        query = select(Warehouse).where(Warehouse.id == Order.warehouse_id == payload.order_id)
+        result = await db.execute(query)
+        warehouse = result.scalar_one_or_none()
 
         stock_query = select(Stock).where(
-            Stock.warehouse_id == warehouse_id,
+            Stock.warehouse_id == warehouse.warehouse_id,
             Stock.drink_id == payload.drink_id
         ).with_for_update()
 
@@ -40,6 +45,10 @@ class OrderLogicService:
         if payload.quantity > stock.quantity:
             raise HTTPException(status_code=409, detail="too much items")
 
+        query = select(Drink).where(Drink.id == payload.drink_id)
+        result = await db.execute(query)
+        drink = result.scalar_one_or_none()
+
         stock.reserved_quantity += payload.quantity
         stock.quantity -= payload.quantity
         
@@ -48,7 +57,7 @@ class OrderLogicService:
             user_id = user.id,
             drink_id = payload.drink_id,
             quantity = payload.quantity,
-            price_per_item = payload.price_per_item
+            price_per_item = drink.price
         )
 
         db.add(new_item)

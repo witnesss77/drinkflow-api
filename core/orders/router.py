@@ -51,8 +51,8 @@ async def get_items(
     return await service.get_items(order_id, user_id, drink_id, quantity, pricier)
 
 @router.post("/order_items")
-async def set_items(request: Request, warehouse_id: int, payload: CreateOrderItem, db = Depends(get_session)):
-    return await OrderLogicService.add_order_item(request, payload, warehouse_id, db)
+async def set_items(request: Request, payload: CreateOrderItem, db = Depends(get_session)):
+    return await OrderLogicService.add_order_item(request, payload, db)
 
 
 @router.patch("/order_items/{item_id:int}")
