@@ -6,6 +6,11 @@ from core.orders.repository import OrdersRepository
 
 celery = Celery("main", broker=rabbitmq_url, backend=redis_url)
 
+#сделать пересчет или пофиксить то что селери ложится
+
+
+
+
 async def process_order_(order_id):
     """считает общую статистику заказа: колво айтемов в заказе + общую цену"""
     async with CelerySessionLocal() as db:

@@ -4,27 +4,36 @@ from core.celery_worker import process_order, update_order, delete_item_from_ord
 from core.messages.rabbitmq import connect_rabbitmq, declare_queue, declare_exchange, NOTIFICATIONS_QUEUE, ORDER_ROUTING_KEY
 
 async def handle_message(message):
-    event_data = json.loads(message.body.decode())
-    print(f"Получено сообщение: {event_data}")
-    if event_data["event"] == "order.created" or event_data["event"] == "order.added_items":
-        result = process_order.delay(event_data["order_id"])
-        print(result.id)
-    if event_data["event"] == "order.changed_quantity":
-        result = update_order.delay(
-            event_data["order_id"], 
-            event_data["price_delta"], 
-            event_data["quantity_delta"])
+    try:
+        event_data = json.loads(message.body.decode())
+        print(f"Получено сообщение: {event_data}")
+        if event_data["event"] == "order.created" or event_data["event"] == "order.added_items":
+            result = process_order.delay(event_data["order_id"])
+            print(result.id)
+        if event_data["event"] == "order.changed_quantity":
+            result = update_order.delay(
+                event_data["order_id"], 
+                event_data["price_delta"], 
+                event_data["quantity_delta"])
 
-        print(result.id)
+            print(result.id)
 
-    if event_data["event"] == "order.deleted_item":
-        result = delete_item_from_order.delay(
-            event_data["order_id"], 
-            event_data["quantity"], 
-            event_data["price_per_item"])
+        if event_data["event"] == "order.deleted_item":
+            result = delete_item_from_order.delay(
+                event_data["order_id"], 
+                event_data["quantity"], 
+                event_data["price_per_item"])
+            
+            print(result.id)
+
+    except (json.JSONDecodeError, KeyError) as exc:
+        print(f"Invalid message: {exc}")
+        await message.reject(requeue=False)
+
+    except Exception as exc:
+        print(f"Consumer error: {exc}")
+        await message.nack(requeue=True)
         
-        print(result.id)
-    
     await message.ack()
 
 
