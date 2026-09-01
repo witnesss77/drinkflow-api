@@ -1,10 +1,10 @@
 from fastapi import APIRouter, status, HTTPException, Depends, Request
 from core.models.database import get_session
-from sqlalchemy.exc import IntegrityError
+from core.auth.router import admin_check
 from core.models.schemas import CreateOrder,CreateOrderItem, UpdateOrderItem, UpdateOrderStatus
 from sqlalchemy import select
 from core.dependencies import get_order_service
-from core.models.models import Order, OrderItem, User
+from core.models.models import OrderItem
 from core.orders.service import OrderLogicService
 from core.auth.router import get_current_user
 
@@ -31,11 +31,11 @@ async def update_order(order_id, service = Depends(get_order_service)):
     return await service.update_order_payment(order_id)
 
 @router.patch("/{order_id:int}/change_status")
-async def update_order_status(request: UpdateOrderStatus, order_id, requested_user = Depends(get_current_user), service = Depends(get_order_service)):
+async def update_order_status(request: UpdateOrderStatus, order_id, requested_user = Depends(get_current_user), service = Depends(get_order_service), user = Depends(admin_check)):
     return await service.update_order_status(request, order_id, requested_user)
 
 @router.delete("/{order_id:int}")
-async def delete_order(order_id, db = Depends(get_session)):
+async def delete_order(order_id, db = Depends(get_session), user = Depends(admin_check)):
     return await OrderLogicService.cancel_order(order_id, db)
     
 
@@ -56,7 +56,7 @@ async def set_items(request: Request, warehouse_id: int, payload: CreateOrderIte
 
 
 @router.patch("/order_items/{item_id:int}")
-async def update_items(item_id, payload: UpdateOrderItem, request: Request, db = Depends(get_session)):
+async def update_items(item_id, payload: UpdateOrderItem, request: Request, db = Depends(get_session), user = Depends(admin_check)):
     query = select(OrderItem).where(OrderItem.id == item_id)
     result = await db.execute(query)
     item = result.scalar_one_or_none()
@@ -71,5 +71,5 @@ async def update_items(item_id, payload: UpdateOrderItem, request: Request, db =
 
 
 @router.delete("/order_items/{item_id:int}")
-async def delete_item(item_id, request: Request, service = Depends(get_order_service)):
+async def delete_item(item_id, request: Request, service = Depends(get_order_service), user = Depends(admin_check)):
     return await service.delete_item(item_id, request)

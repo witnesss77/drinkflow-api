@@ -1,6 +1,5 @@
 import aio_pika
 from aio_pika.abc import AbstractExchange
-from core.messages.rabbitmq import ORDER_ROUTING_KEY, USER_ROUTING_KEY
 import json
 
 
