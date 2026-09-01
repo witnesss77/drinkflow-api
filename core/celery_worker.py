@@ -18,7 +18,7 @@ async def process_order_(order_id):
         for item in order_items:
             count += item.quantity
             total_price += item.price_per_item * item.quantity
-
+            await db.refresh(item)
 
         return {
             "order_id": order_id,
@@ -37,7 +37,7 @@ async def changed_order(order_id, price_delta, quantity_delta):
         order.item_count += quantity_delta
         order.total_price += price_delta
 
-        await db.commit()
+        await db.refresh(order)
 
         return {
             "order_id": order_id,

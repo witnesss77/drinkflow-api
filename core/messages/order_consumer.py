@@ -1,12 +1,12 @@
 import asyncio
 import json
 from core.celery_worker import process_order, update_order, delete_item_from_order
-from core.messages.rabbitmq import connect_rabbitmq, declare_queue, declare_exchange, ORDER_EXCHANGE, NOTIFICATIONS_QUEUE, ORDER_ROUTING_KEY
+from core.messages.rabbitmq import connect_rabbitmq, declare_queue, declare_exchange, NOTIFICATIONS_QUEUE, ORDER_ROUTING_KEY
 
 async def handle_message(message):
     event_data = json.loads(message.body.decode())
     print(f"Получено сообщение: {event_data}")
-    if event_data["event"] == "order.created":
+    if event_data["event"] == "order.created" or event_data["event"] == "order.added_items":
         result = process_order.delay(event_data["order_id"])
         print(result.id)
     if event_data["event"] == "order.changed_quantity":

@@ -55,7 +55,7 @@ class OrderLogicService:
         await db.commit()
         
         producer = OrderProducer(request.app.state.orders_exchange)
-        await producer.changed_order_quantity(order_id = order.id, price_delta=new_item.price_per_item, quantity_delta=new_item.quantity)
+        await producer.add_order_items(order_id = order.id)
         return new_item
     
 

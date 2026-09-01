@@ -36,6 +36,16 @@ class OrderProducer:
             routing_key="order.changed_quantity",
             data = event_data)
 
+    async def add_order_items(self, order_id):
+        event_data = {
+            "event": "order.added_items",
+            "order_id": order_id,
+        }
+        await publish_json(
+            exchange=self.exchange, 
+            routing_key="order.added_items",
+            data = event_data)
+
     async def deleted_order_item(self, order_id, quantity, price_per_item):
         event_data = {
             "event": "order.deleted_item",
@@ -48,19 +58,3 @@ class OrderProducer:
             exchange=self.exchange, 
             routing_key="order.deleted_item",
             data = event_data)
-
-class UserProducer:
-    def __init__(self, exchange):
-        self.exchange = exchange
-
-    async def created_user(self, user_mail):
-        event_data = {
-            "event": "user.registered",
-            "email": user_mail
-        }
-
-        await publish_json(
-            exchange=self.exchange,
-            routing_key=USER_ROUTING_KEY,
-            data = event_data
-        )

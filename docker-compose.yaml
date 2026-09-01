@@ -29,6 +29,9 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d drinkflow"]
 
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -76,3 +79,6 @@ services:
 
     command: 
       python -m core.messages.order_consumer  
+
+volumes:
+  postgres_data:
