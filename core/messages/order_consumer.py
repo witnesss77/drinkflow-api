@@ -28,11 +28,11 @@ async def handle_message(message):
 
     except (json.JSONDecodeError, KeyError) as exc:
         print(f"Invalid message: {exc}")
-        await message.reject(requeue=False)
+        return await message.reject(requeue=False)
 
     except Exception as exc:
         print(f"Consumer error: {exc}")
-        await message.nack(requeue=True)
+        return await message.nack(requeue=True)
         
     await message.ack()
 
