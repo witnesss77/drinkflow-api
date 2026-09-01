@@ -1,10 +1,13 @@
 from fastapi import APIRouter, status, HTTPException, Depends
 from core.models.database import get_session
-from sqlalchemy.exc import IntegrityError
+from core.auth.router import admin_check
+from typing import Annotated
 from core.dependencies import get_drink_service
 from core.models.schemas import CreateDrink, UpdateDrink
 from sqlalchemy import select
 from core.models.models import Drink
+
+user_dependency = Annotated[dict, Depends(admin_check)]
 
 router = APIRouter(prefix="/drinks")
 
@@ -35,13 +38,13 @@ async def get_item(drink_id: int, db = Depends(get_session)):
     return result
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def set_items(request: CreateDrink, service = Depends(get_drink_service)):
+async def set_items(request: CreateDrink, service = Depends(get_drink_service), user = Depends(admin_check)):
     return await service.set_drink(request)
 
 @router.patch("/{drink_id:int}")
-async def update_item(drink_id, update: UpdateDrink, service = Depends(get_drink_service)):
+async def update_item(drink_id, update: UpdateDrink, service = Depends(get_drink_service), user = Depends(admin_check)):
     return await service.update_drink(drink_id, update)
     
 @router.delete("/{drink_id:int}")
-async def delete_drink(drink_id, service = Depends(get_drink_service)):
+async def delete_drink(drink_id, service = Depends(get_drink_service), user = Depends(admin_check)):
     return await service.delete_drink(drink_id)

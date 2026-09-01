@@ -8,10 +8,10 @@ class RedisCache:
         self.cache_ttl_seconds = cache_ttl_seconds
     
     async def set(self, key: str, value):
-        self.redis.set(key, json.dumps(value), ex = self.cache_ttl_seconds)
+        await self.redis.set(key, json.dumps(value), ex = self.cache_ttl_seconds)
 
     async def get(self, key: str):
-        value = self.redis.get(key)
+        value = await self.redis.get(key)
 
         if value is None:
             return None
@@ -19,10 +19,10 @@ class RedisCache:
         return json.loads(value)
 
     async def delete(self, key: str):
-        self.redis.delete(key)
+        await self.redis.delete(key)
 
     async def delete_by_pattern(self, pattern: str):
-        keys = self.redis.keys(pattern)
+        keys = await self.redis.keys(pattern)
 
         if keys:
-            self.redis.delete(*keys)
+            await self.redis.delete(*keys)

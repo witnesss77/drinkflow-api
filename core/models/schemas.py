@@ -115,11 +115,18 @@ class RoleEnum(str, Enum):
     manager = 'manager'
 
 
-class CreateUser(BaseModel):
+class CreateUser_admin(BaseModel):
     name: str = Field(...)
     email:  EmailStr = Field(...)
     password: str = Field(..., min_length=8)
     role: RoleEnum
+
+
+class CreateUser(BaseModel):
+    name: str = Field(...)
+    email: EmailStr = Field(...)
+    password: str = Field(..., min_length=8)
+
 
 
 class UpdateUser(BaseModel):
