@@ -20,6 +20,7 @@ class DrinkService:
 
 
         params = {
+        "page":page,
         "name": name,
         "desc": desc,
         "alcoholic": alcoholic,
@@ -28,24 +29,24 @@ class DrinkService:
         }
 
         key = f"{self.key}:{params}"
-        cached_drinks = self.redis.get(key)
+        cached_drinks = await self.redis.get(key)
         if cached_drinks:
             return cached_drinks
 
         items = await self.repository.get_all_filter(page, name, desc, alcoholic, price, factory_id)
         cache = [DrinkSchema.model_validate(item).model_dump() for item in items]
-        self.redis.set(key, cache)
+        await self.redis.set(key, cache)
 
         return await self.repository.get_all_filter(page, name, desc, alcoholic, price, factory_id)
 
     async def set_drink(self, request):
-        self.redis.delete_by_pattern(f"{self.key}:*")
+        await self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.set_drink(request)
 
     async def update_drink(self, drink_id, request):
-        self.redis.delete_by_pattern(f"{self.key}:*")
+        await self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.update_drink(drink_id, request)
 
     async def delete_drink(self, drink_id):
-        self.redis.delete_by_pattern(f"{self.key}:*")
+        await self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.delete_drink(drink_id)

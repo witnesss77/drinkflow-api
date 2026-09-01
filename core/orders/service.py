@@ -169,6 +169,7 @@ class OrderService:
             total_price = None):
 
         params = {
+        "page": page,
         "user_id": user_id,
         "warehouse_id": warehouse_id,
         "status": status,
@@ -179,17 +180,17 @@ class OrderService:
         
         key = f"{self.key}:{params}"
 
-        cached_orders = self.redis.get(key)
+        cached_orders = await self.redis.get(key)
         if cached_orders:
             return cached_orders
                 
         items = await self.repository.get_orders(page, user_id, warehouse_id, status, is_paid)
         cache = [OrderSchema.model_validate(item).model_dump() for item in items]
-        self.redis.set(key, cache)
+        await self.redis.set(key, cache)
         return cache
 
     async def set_order(self, payload, request):
-        self.redis.delete_by_pattern(f"{self.key}:*")
+        await self.redis.delete_by_pattern(f"{self.key}:*")
         order = await self.repository.set_order(payload)
         producer = OrderProducer(request.app.state.orders_exchange)
         await producer.created_order(order_id = order.id)
@@ -197,18 +198,18 @@ class OrderService:
         return order
 
     async def update_order_payment(self, order_id):
-        self.redis.delete_by_pattern(f"{self.key}:*")
+        await self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.update_order_payment(order_id)
 
     async def update_order_status(self, request, order_id, requested_user):
-        self.redis.delete_by_pattern(f"{self.key}:*")
+        await self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.update_order_status(request, order_id, requested_user)
 
     async def get_items(self, order_id,user_id,drink_id,quantity,pricier):
         return await self.repository.get_items(order_id, user_id, drink_id, quantity, pricier)
 
     async def delete_item(self, item_id, request):
-        self.redis.delete_by_pattern(f"{self.key}:*")
+        await self.redis.delete_by_pattern(f"{self.key}:*")
         item = await self.repository.get_item_by_id(item_id)
 
         producer = OrderProducer(request.app.state.orders_exchange)
