@@ -31,8 +31,8 @@ async def update_order(order_id, service = Depends(get_order_service)):
     return await service.update_order_payment(order_id)
 
 @router.patch("/{order_id:int}/change_status")
-async def update_order_status(request: UpdateOrderStatus, order_id, requested_user = Depends(get_current_user), service = Depends(get_order_service), user = Depends(admin_check)):
-    return await service.update_order_status(request, order_id, requested_user)
+async def update_order_status(request: UpdateOrderStatus, order_id,service = Depends(get_order_service), user = Depends(admin_check)):
+    return await service.update_order_status(request, order_id, user)
 
 @router.delete("/{order_id:int}")
 async def delete_order(order_id, db = Depends(get_session), user = Depends(admin_check)):
@@ -51,8 +51,8 @@ async def get_items(
     return await service.get_items(order_id, user_id, drink_id, quantity, pricier)
 
 @router.post("/order_items")
-async def set_items(request: Request, payload: CreateOrderItem, db = Depends(get_session)):
-    return await OrderLogicService.add_order_item(request, payload, db)
+async def set_items(request: Request, payload: CreateOrderItem, db = Depends(get_session), id_ = Depends(admin_check)):
+    return await OrderLogicService.add_order_item(request, payload, db, id_)
 
 
 @router.patch("/order_items/{item_id:int}")
@@ -61,7 +61,7 @@ async def update_items(item_id, payload: UpdateOrderItem, request: Request, db =
     result = await db.execute(query)
     item = result.scalar_one_or_none()
 
-    if item is None:
+    if not item:
             raise HTTPException(
                 status_code=404,
                 detail="Item not found"
@@ -72,4 +72,4 @@ async def update_items(item_id, payload: UpdateOrderItem, request: Request, db =
 
 @router.delete("/order_items/{item_id:int}")
 async def delete_item(item_id, request: Request, service = Depends(get_order_service), user = Depends(admin_check)):
-    return await service.delete_item(item_id, request)
+    return await service.remove_item(item_id, request)

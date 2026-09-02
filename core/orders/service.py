@@ -12,27 +12,29 @@ from cache.cache import RedisCache
 
 
 class OrderLogicService:
-    async def add_order_item(request, payload, db, user = Depends(get_current_user)):
-        query = select(User).options(selectinload(User.orders)).where(User.id == int(user['id']))
+    async def add_order_item(request, payload, db, id_):
+        query = select(User).options(selectinload(User.orders)).where(User.id == (id_.id))
         result = await db.execute(query)
         user = result.scalar_one_or_none()
 
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
-        query = select(Order).where(Order.id == payload.order_id, Order.user_id == payload.user_id)
+        query = select(Order).where(Order.id == payload.order_id, Order.user_id == id_.id)
         result = await db.execute(query)
         order = result.scalar_one_or_none()
 
         if order is None:
             raise HTTPException(status_code=404, detail="Order not found")
         
-        query = select(Warehouse).where(Warehouse.id == Order.warehouse_id == payload.order_id)
+        query = select(Warehouse).where(Warehouse.id == Order.warehouse_id)
         result = await db.execute(query)
-        warehouse = result.scalar_one_or_none()
+        warehouse = result.scalars().all()
+
+        warehouse = warehouse[0]
 
         stock_query = select(Stock).where(
-            Stock.warehouse_id == warehouse.warehouse_id,
+            Stock.warehouse_id == warehouse.id,
             Stock.drink_id == payload.drink_id
         ).with_for_update()
 
@@ -81,7 +83,7 @@ class OrderLogicService:
         items = res.scalars().all()
             
         for item in items:
-            query = select(Stock).where(item.drink_id == Stock.drink_id)
+            query = select(Stock).where(item.drink_id == Stock.drink_id, Stock.warehouse == order.warehouse_id)
             res = await db.execute(query)
             stock = res.scalar_one_or_none()
             if stock.drink_id == item.drink_id:
@@ -100,10 +102,14 @@ class OrderLogicService:
         result = await db.execute(query)
         item = result.scalar_one_or_none()
 
-        if item is None:
+        if not item:
             raise HTTPException(status_code=409, detail="orderitem doesn't exist")
-        
-        query = select(Stock).where(item.drink_id == Stock.drink_id)
+
+        query  = select(Order).where(Order.id == item.order_id)
+        result = await db.execute(query)
+        order = result.scalar_one_or_none()
+
+        query = select(Stock).where(item.drink_id == Stock.drink_id, Stock.warehouse == order.warehouse_id)
         res = await db.execute(query)
         stock = res.scalar_one_or_none()
 
@@ -119,7 +125,11 @@ class OrderLogicService:
         result = await db.execute(query)
         item = result.scalar_one_or_none()
 
-        query = select(Stock).where(Stock.drink_id == item.drink_id)
+        query  = select(Order).where(Order.id == item.order_id)
+        result = await db.execute(query)
+        order = result.scalar_one_or_none()
+
+        query = select(Stock).where(Stock.drink_id == item.drink_id, Stock.warehouse_id == order.warehouse_id)
         res = await db.execute(query)
         stock = res.scalar_one_or_none()
 

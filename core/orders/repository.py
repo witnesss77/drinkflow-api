@@ -70,7 +70,7 @@ class OrdersRepository:
                 detail="Order not found"
             )
             
-        if items is None:
+        if not items:
             raise HTTPException(status_code=409, detail="order is empty")
             
         if order.is_paid == True or order.status == "paid":
@@ -104,7 +104,7 @@ class OrdersRepository:
                 detail="Order not found"
             )
             
-        if items is None:
+        if not items:
             raise HTTPException(status_code=409, detail="order is empty")
             
         order.status = request.status
@@ -147,7 +147,7 @@ class OrdersRepository:
         result = await self.db.execute(query)
         item = result.scalar_one_or_none()
         
-        if item is None:
+        if not item:
             raise HTTPException(
                 status_code=404,
                 detail="OrderItem doesnt exist"
