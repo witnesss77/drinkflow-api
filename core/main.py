@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from core.messages.rabbitmq import connect_rabbitmq, declare_exchange, declare_queue, USER_EXCHANGE, ORDER_EXCHANGE, USERS_QUEUE, NOTIFICATIONS_QUEUE, USER_ROUTING_KEY, ORDER_ROUTING_KEY
+from core.messages.rabbitmq import connect_rabbitmq, declare_exchange, declare_queue, ORDER_EXCHANGE, NOTIFICATIONS_QUEUE, ORDER_ROUTING_KEY
 from core.drinks.router import router as drinks_router
 from core.factories.router import router as factories_router
 from core.warehouse.router import router as warehouses_router
@@ -14,15 +14,12 @@ async def lifespan(app: FastAPI):
     connection = await connect_rabbitmq()
     channel = await connection.channel()
 
-    user_channel = await connection.channel()
-    exchange = await declare_exchange(channel, ORDER_EXCHANGE)
-    user_exchange = await declare_exchange(channel, USER_EXCHANGE)
 
-    await declare_queue(user_channel, user_exchange, USERS_QUEUE, USER_ROUTING_KEY)
+    exchange = await declare_exchange(channel, ORDER_EXCHANGE)
+
     await declare_queue(channel, exchange, NOTIFICATIONS_QUEUE, ORDER_ROUTING_KEY)
     
     app.state.orders_exchange = exchange
-    app.state.users_exchange = user_exchange
 
 
     yield 

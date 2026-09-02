@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from core.models.models import Order, OrderItem, User
@@ -56,7 +57,7 @@ class OrdersRepository:
         return order
 
     async def get_order_by_id(self, order_id) -> Order:
-        query = select(Order).where(Order.id == order_id).with_for_update()
+        query = select(Order).options(selectinload(Order.items)).where(Order.id == order_id).with_for_update()
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
