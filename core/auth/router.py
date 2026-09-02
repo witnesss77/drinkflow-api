@@ -90,7 +90,7 @@ async def create_user(payload: CreateUser, db = Depends(get_session)):
         await db.commit()
     except IntegrityError:
         await db.rollback()
-        return HTTPException(
+        raise HTTPException(
             status_code=409,
             detail = "Email already exists in the system"
         )
