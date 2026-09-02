@@ -50,12 +50,12 @@ async def get_items(
     return await service.get_items(order_id, drink_id, quantity, pricier, user)
 
 @router.post("/order_items")
-async def set_items(request: Request, payload: CreateOrderItem, db = Depends(get_session), id_ = Depends(admin_check)):
+async def set_items(request: Request, payload: CreateOrderItem, db = Depends(get_session), id_ = Depends(get_current_user)):
     return await OrderLogicService.add_order_item(request, payload, db, id_)
 
 
 @router.patch("/order_items/{item_id:int}")
-async def update_items(item_id, payload: UpdateOrderItem, request: Request, db = Depends(get_session), user = Depends(admin_check)):
+async def update_items(item_id, payload: UpdateOrderItem, request: Request, db = Depends(get_session), user = Depends(get_current_user)):
     query = select(OrderItem).where(OrderItem.id == item_id)
     result = await db.execute(query)
     item = result.scalar_one_or_none()

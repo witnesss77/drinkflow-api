@@ -13,14 +13,14 @@ from cache.cache import RedisCache
 
 class OrderLogicService:
     async def add_order_item(request, payload, db, id_):
-        query = select(User).options(selectinload(User.orders)).where(User.id == (id_.id))
+        query = select(User).options(selectinload(User.orders)).where(User.id == int(id_['id']))
         result = await db.execute(query)
         user = result.scalar_one_or_none()
 
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
-        query = select(Order).where(Order.id == payload.order_id, Order.user_id == id_.id)
+        query = select(Order).where(Order.id == payload.order_id, Order.user_id == int(id_['id']))
         result = await db.execute(query)
         order = result.scalar_one_or_none()
 
@@ -122,7 +122,7 @@ class OrderLogicService:
         await db.delete(item)
         await db.commit()
         producer = OrderProducer(request.app.state.orders_exchange)
-        await producer.deleted_order_item(item.order_id, item.quantity, item.price_per_item)
+        await producer.deleted_order_item(item.order_id)
         
         return "done"
     
@@ -163,10 +163,7 @@ class OrderLogicService:
 
         producer = OrderProducer(request.app.state.orders_exchange)
 
-        await producer.changed_order_quantity(
-            order_id=item.order_id,
-            quantity_delta=quantity_delta
-            )
+        await producer.changed_order_quantity(order_id=item.order_id)
 
         return item
 
@@ -232,5 +229,5 @@ class OrderService:
         item = await self.repository.get_item_by_id(item_id)
 
         producer = OrderProducer(request.app.state.orders_exchange)
-        await producer.deleted_order_item(item.order_id, item.quantity, item.price_per_item)
+        await producer.deleted_order_item(item.order_id)
         return await self.repository.delete_item(item_id)

@@ -75,7 +75,6 @@ class UpdateStock(BaseModel):
 
 
 class CreateOrder(BaseModel):
-    user_id: int = Field(...)
     warehouse_id: int = Field(...)
 
 

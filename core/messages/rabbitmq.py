@@ -6,9 +6,6 @@ NOTIFICATIONS_QUEUE = "notifications.order_created"
 ORDER_EXCHANGE = "order"
 ORDER_ROUTING_KEY = "order.*"
 
-USER_ROUTING_KEY = "user.registered"
-USER_EXCHANGE = "user"
-USERS_QUEUE = "users.registered"
 
 async def connect_rabbitmq():
     return await aio_pika.connect_robust(rabbitmq_url)

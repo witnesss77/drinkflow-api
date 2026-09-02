@@ -9,10 +9,14 @@ class OrdersRepository:
         self.db = db
 
     async def get_orders(self, user, page, warehouse_id, status, is_paid):
-        if user['role'] in ("admin", "manager"):
+        q = select(User).where(User.id == int(user['id']))
+        res = await self.db.execute(q)
+        user = res.scalar_one_or_none()
+
+        if user.role in ("admin", "manager"):
             query = select(Order)
         else:
-            query = select(Order).where(Order.user_id == int(user['id']))
+            query = select(Order).where(Order.user_id == user.id)
         if warehouse_id is not None:
             query = query.where(Order.warehouse_id == warehouse_id)
         if status is not None:
@@ -117,7 +121,12 @@ class OrdersRepository:
         drink_id: int | None = None,
         quantity: int | None = None,
         pricier: int | None = None) -> list[OrderItem]:
-        if user['role'] in ('admin', 'manager'):
+
+        query = select(User).where(User.id == int(user['id']))
+        result = await self.db.execute(query)
+        res = result.scalar_one_or_none()
+
+        if res.role in ('admin', 'manager'):
             query = select(OrderItem)
         else:
             query = select(OrderItem).where(int(user['id']) == OrderItem.user_id)

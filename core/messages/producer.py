@@ -22,11 +22,10 @@ class OrderProducer:
             routing_key="order.created",
             data = event_data)
 
-    async def changed_order_quantity(self, order_id, quantity_delta):
+    async def changed_order_quantity(self, order_id):
         event_data = {
             "event": "order.changed_quantity",
-            "order_id": order_id,
-            "quantity_delta": quantity_delta
+            "order_id": order_id
         }
                 
         await publish_json(
@@ -44,12 +43,10 @@ class OrderProducer:
             routing_key="order.added_items",
             data = event_data)
 
-    async def deleted_order_item(self, order_id, quantity, price_per_item):
+    async def deleted_order_item(self, order_id):
         event_data = {
             "event": "order.deleted_item",
             "order_id": order_id,
-            "quantity": quantity, 
-            "price_per_item": price_per_item
         }
 
         await publish_json(
