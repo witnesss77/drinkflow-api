@@ -228,7 +228,7 @@ class OrderService:
         return await self.repository.update_order_status(request, order_id, requested_user)
 
     async def get_items(self, order_id, drink_id,quantity,pricier, user):
-        return await self.repository.get_items(user, order_id,drink_id, quantity, pricier)
+        return await self.repository.get_items(user, order_id, drink_id, quantity, pricier)
 
     async def delete_item(self, item_id, request):
         await self.redis.delete_by_pattern(f"{self.key}:*")

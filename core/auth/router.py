@@ -89,6 +89,7 @@ async def create_user(payload: CreateUser, db = Depends(get_session)):
         db.add(user)
         await db.commit()
     except IntegrityError:
+        await db.rollback()
         return HTTPException(
             status_code=409,
             detail = "Email already exists in the system"
@@ -97,18 +98,18 @@ async def create_user(payload: CreateUser, db = Depends(get_session)):
     return {"id": user.id, "role": user.role, "username": user.name}
     
 def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
-    payload = jwt.decode(token, key = secret_key, algorithms=[algorithms])
-    if payload.get("type") == "access_token":
-        username: str = payload.get('sub')
-        user_id: str = payload.get('id')
-        try:
+    try:
+        payload = jwt.decode(token, key = secret_key, algorithms=[algorithms])
+        if payload.get("type") == "access_token":
+            username: str = payload.get('sub')
+            user_id: str = payload.get('id')
             if username is None or user_id is None:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
             return {'username': username, 'id': user_id}
-        except InvalidTokenError:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    except InvalidTokenError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     else:
-        return "invalid token type"
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 async def admin_check(
     res = Depends(get_current_user),

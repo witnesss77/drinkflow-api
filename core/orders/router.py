@@ -41,14 +41,13 @@ async def delete_order(order_id, db = Depends(get_session), user = Depends(admin
 @router.get("/order_items")
 async def get_items(
     order_id: int | None = None,
-    user_id: int | None = None,
     drink_id: int | None = None,
     quantity: int | None = None,
     pricier: int | None = None,
     service = Depends(get_order_service), 
     user = Depends(get_current_user)):
 
-    return await service.get_items(order_id, user_id, drink_id, quantity, pricier, user)
+    return await service.get_items(order_id, drink_id, quantity, pricier, user)
 
 @router.post("/order_items")
 async def set_items(request: Request, payload: CreateOrderItem, db = Depends(get_session), id_ = Depends(admin_check)):

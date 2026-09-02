@@ -60,16 +60,14 @@ class OrdersRepository:
         query = select(Order).where(Order.id == order_id, int(user['id']) == Order.user_id)
         result = await self.db.execute(query)
         order = result.scalar_one_or_none()
+
+        if order is None:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
         query2 = select(OrderItem).where(OrderItem.order_id == order.id)
         result2 = await self.db.execute(query2)
         items = result2.scalars().all()
         
-        if order is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Order not found"
-            )
-            
         if not items:
             raise HTTPException(status_code=409, detail="order is empty")
             
@@ -84,7 +82,7 @@ class OrdersRepository:
         return order
 
     async def update_order_status(self, request, order_id, requested_user):
-        user_ = select(User).where(User.id == int(requested_user['id'])).where(User.role == "manager" or User.role == "admin")
+        user_ = select(User).where(User.id == int(requested_user['id']))
         query = await self.db.execute(user_)
         res = query.scalar_one_or_none()
         

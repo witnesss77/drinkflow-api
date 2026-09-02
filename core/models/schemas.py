@@ -98,8 +98,7 @@ class CreateOrderItem(BaseModel):
 
 
 class UpdateOrderItem(BaseModel):
-    quantity: int | None = None
-    price_per_item: int | None = None
+    quantity: int = Field(gt=0)
 
 
 class Token(BaseModel):
