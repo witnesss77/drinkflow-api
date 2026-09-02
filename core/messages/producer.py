@@ -22,11 +22,10 @@ class OrderProducer:
             routing_key="order.created",
             data = event_data)
 
-    async def changed_order_quantity(self, order_id, price_delta, quantity_delta):
+    async def changed_order_quantity(self, order_id, quantity_delta):
         event_data = {
             "event": "order.changed_quantity",
             "order_id": order_id,
-            "price_delta": price_delta, 
             "quantity_delta": quantity_delta
         }
                 

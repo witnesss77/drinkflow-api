@@ -13,7 +13,6 @@ async def handle_message(message):
         if event_data["event"] == "order.changed_quantity":
             result = update_order.delay(
                 event_data["order_id"], 
-                event_data["price_delta"], 
                 event_data["quantity_delta"])
 
             print(result.id)

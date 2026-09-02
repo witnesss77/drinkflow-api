@@ -83,7 +83,9 @@ class OrderLogicService:
         items = res.scalars().all()
             
         for item in items:
-            query = select(Stock).where(item.drink_id == Stock.drink_id, Stock.warehouse_id == order.warehouse_id)
+            query = select(Stock).where(
+            item.drink_id == Stock.drink_id, Stock.warehouse_id == order.warehouse_id
+            ).with_for_update()
             res = await db.execute(query)
             stock = res.scalar_one_or_none()
             if stock.drink_id == item.drink_id:
@@ -109,7 +111,9 @@ class OrderLogicService:
         result = await db.execute(query)
         order = result.scalar_one_or_none()
 
-        query = select(Stock).where(item.drink_id == Stock.drink_id, Stock.warehouse_id == order.warehouse_id)
+        query = select(Stock).where(
+        item.drink_id == Stock.drink_id, Stock.warehouse_id == order.warehouse_id
+        ).with_for_update()
         res = await db.execute(query)
         stock = res.scalar_one_or_none()
 
@@ -131,15 +135,15 @@ class OrderLogicService:
         result = await db.execute(query)
         order = result.scalar_one_or_none()
 
-        query = select(Stock).where(Stock.drink_id == item.drink_id, Stock.warehouse_id == order.warehouse_id)
+        query = select(Stock).where(
+        Stock.drink_id == item.drink_id, Stock.warehouse_id == order.warehouse_id
+        ).with_for_update()
+
         res = await db.execute(query)
         stock = res.scalar_one_or_none()
 
         old_quantity = item.quantity
-        old_price = item.price_per_item
-
         new_quantity = payload.quantity
-        new_price = payload.price_per_item
 
         quantity_delta = new_quantity - old_quantity
 
@@ -149,16 +153,10 @@ class OrderLogicService:
                 detail="not enough in stock"
             )
 
-        old_total = old_quantity * old_price
-        new_total = new_quantity * new_price
-
-        price_delta = new_total - old_total
-
         stock.quantity -= quantity_delta
         stock.reserved_quantity += quantity_delta
 
         item.quantity = new_quantity
-        item.price_per_item = new_price
 
         await db.commit()
         await db.refresh(item)
@@ -167,7 +165,6 @@ class OrderLogicService:
 
         await producer.changed_order_quantity(
             order_id=item.order_id,
-            price_delta=price_delta,
             quantity_delta=quantity_delta
             )
 
