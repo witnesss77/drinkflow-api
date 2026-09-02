@@ -31,9 +31,9 @@ class OrdersRepository:
             result = await self.db.execute(query)
             return result.scalars().all()
         
-    async def set_order(self, request):
+    async def set_order(self, request, user_id):
         order = Order(
-                user_id = request.user_id,
+                user_id = user_id,
                 warehouse_id = request.warehouse_id,
                 status = "created",
                 is_paid = False

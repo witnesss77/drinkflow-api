@@ -97,7 +97,7 @@ class OrderLogicService:
         await db.commit()
         return status.HTTP_200_OK
     
-    async def remove_item(item_id, db):
+    async def remove_item(item_id, request, db):
         query = select(OrderItem).where(OrderItem.id == item_id)
         result = await db.execute(query)
         item = result.scalar_one_or_none()
@@ -109,7 +109,7 @@ class OrderLogicService:
         result = await db.execute(query)
         order = result.scalar_one_or_none()
 
-        query = select(Stock).where(item.drink_id == Stock.drink_id, Stock.warehouse == order.warehouse_id)
+        query = select(Stock).where(item.drink_id == Stock.drink_id, Stock.warehouse_id == order.warehouse_id)
         res = await db.execute(query)
         stock = res.scalar_one_or_none()
 
@@ -117,6 +117,8 @@ class OrderLogicService:
         stock.quantity += item.quantity
         await db.delete(item)
         await db.commit()
+        producer = OrderProducer(request.app.state.orders_exchange)
+        await producer.deleted_order_item(item.order_id, item.quantity, item.price_per_item)
         
         return "done"
     
@@ -208,9 +210,9 @@ class OrderService:
         await self.redis.set(key, cache)
         return cache
 
-    async def set_order(self, payload, request):
+    async def set_order(self, payload, request, user_id):
         await self.redis.delete_by_pattern(f"{self.key}:*")
-        order = await self.repository.set_order(payload)
+        order = await self.repository.set_order(payload, user_id)
         producer = OrderProducer(request.app.state.orders_exchange)
         await producer.created_order(order_id = order.id)
 

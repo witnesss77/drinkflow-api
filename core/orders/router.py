@@ -23,8 +23,8 @@ async def get_orders(
     
 
 @router.post("", status_code = status.HTTP_201_CREATED)
-async def set_orders(payload: CreateOrder, request: Request, service = Depends(get_order_service)):
-    return await service.set_order(payload, request)
+async def set_orders(payload: CreateOrder, request: Request, service = Depends(get_order_service), user = Depends(get_current_user)):
+    return await service.set_order(payload, request, user_id = int(user['id']))
 
 @router.patch("/{order_id:int}/payment")
 async def update_order(order_id, service = Depends(get_order_service)):
@@ -71,5 +71,5 @@ async def update_items(item_id, payload: UpdateOrderItem, request: Request, db =
 
 
 @router.delete("/order_items/{item_id:int}")
-async def delete_item(item_id, request: Request, service = Depends(get_order_service), user = Depends(admin_check)):
-    return await service.remove_item(item_id, request)
+async def delete_item(item_id, request: Request, user = Depends(admin_check), db = Depends(get_session)):
+    return await OrderLogicService.remove_item(item_id, request, db)
