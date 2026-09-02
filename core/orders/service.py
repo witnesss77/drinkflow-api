@@ -83,7 +83,7 @@ class OrderLogicService:
         items = res.scalars().all()
             
         for item in items:
-            query = select(Stock).where(item.drink_id == Stock.drink_id, Stock.warehouse == order.warehouse_id)
+            query = select(Stock).where(item.drink_id == Stock.drink_id, Stock.warehouse_id == order.warehouse_id)
             res = await db.execute(query)
             stock = res.scalar_one_or_none()
             if stock.drink_id == item.drink_id:
@@ -180,18 +180,19 @@ class OrderService:
         self.redis = RedisCache(redis_url, cache_ttl)
         self.key = cache_key
 
-    async def get_orders(self, 
+    async def get_orders(self,
+            user,
             page = None, 
-            user_id = None, 
             warehouse_id = None, 
             status = None, 
             is_paid = None,
             item_count = None,
-            total_price = None):
-
+            total_price = None, 
+            ):
+        
         params = {
+        "user_id": int(user["id"]),
         "page": page,
-        "user_id": user_id,
         "warehouse_id": warehouse_id,
         "status": status,
         "is_paid": is_paid,
@@ -205,7 +206,7 @@ class OrderService:
         if cached_orders:
             return cached_orders
                 
-        items = await self.repository.get_orders(page, user_id, warehouse_id, status, is_paid)
+        items = await self.repository.get_orders(user, page,warehouse_id, status, is_paid)
         cache = [OrderSchema.model_validate(item).model_dump() for item in items]
         await self.redis.set(key, cache)
         return cache
@@ -218,16 +219,16 @@ class OrderService:
 
         return order
 
-    async def update_order_payment(self, order_id):
+    async def update_order_payment(self, order_id, user):
         await self.redis.delete_by_pattern(f"{self.key}:*")
-        return await self.repository.update_order_payment(order_id)
+        return await self.repository.update_order_payment(order_id, user)
 
     async def update_order_status(self, request, order_id, requested_user):
         await self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.update_order_status(request, order_id, requested_user)
 
-    async def get_items(self, order_id,user_id,drink_id,quantity,pricier):
-        return await self.repository.get_items(order_id, user_id, drink_id, quantity, pricier)
+    async def get_items(self, order_id, drink_id,quantity,pricier, user):
+        return await self.repository.get_items(user, order_id,drink_id, quantity, pricier)
 
     async def delete_item(self, item_id, request):
         await self.redis.delete_by_pattern(f"{self.key}:*")

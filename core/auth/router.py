@@ -183,7 +183,7 @@ async def refresh_access_token(refresh_token: RefreshRequest, db = Depends(get_s
         raise HTTPException(status_code=401, detail="Wrong token")
 
 @router.post("/register/admin", status_code=status.HTTP_201_CREATED)
-async def create_user_(payload: CreateUser, db = Depends(get_session), admin = Depends(admin_check)):
+async def create_user_(payload: CreateUser_admin, db = Depends(get_session), admin = Depends(admin_check)):
     salt = bcrypt.gensalt()
     pw = payload.password
     encrypted = pw.encode('utf-8')

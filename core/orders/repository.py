@@ -8,14 +8,14 @@ class OrdersRepository:
     def __init__(self, db):
         self.db = db
 
-    async def get_orders(self, page, user_id, warehouse_id, status, is_paid):
-        query = select(Order)
-        
-        if user_id:
-            query = query.where(Order.user_id == user_id)
-        if warehouse_id:
+    async def get_orders(self, user, page, warehouse_id, status, is_paid):
+        if user['role'] in ("admin", "manager"):
+            query = select(Order)
+        else:
+            query = select(Order).where(Order.user_id == int(user['id']))
+        if warehouse_id is not None:
             query = query.where(Order.warehouse_id == warehouse_id)
-        if status:
+        if status is not None:
             query = query.where(Order.status == status)
         if is_paid is not None:
             query = query.where(Order.is_paid == is_paid)
@@ -56,8 +56,8 @@ class OrdersRepository:
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
-    async def update_order_payment(self, order_id):
-        query = select(Order).where(Order.id == order_id)
+    async def update_order_payment(self, order_id, user):
+        query = select(Order).where(Order.id == order_id, int(user['id']) == Order.user_id)
         result = await self.db.execute(query)
         order = result.scalar_one_or_none()
         query2 = select(OrderItem).where(OrderItem.order_id == order.id)
@@ -114,18 +114,18 @@ class OrdersRepository:
         await self.db.refresh(order)
         return order
 
-    async def get_items(self,
+    async def get_items(self, user,
         order_id: int | None = None,
-        user_id: int | None = None,
         drink_id: int | None = None,
         quantity: int | None = None,
         pricier: int | None = None) -> list[OrderItem]:
-        query = select(OrderItem)
+        if user['role'] in ('admin', 'manager'):
+            query = select(OrderItem)
+        else:
+            query = select(OrderItem).where(int(user['id']) == OrderItem.user_id)
         
         if order_id:
             query = query.where(OrderItem.order_id == order_id)
-        if user_id:
-            query = query.where(OrderItem.user_id == user_id)
         if drink_id:
             query = query.where(OrderItem.drink_id == drink_id)
         if quantity:

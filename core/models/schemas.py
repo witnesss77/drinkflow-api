@@ -86,7 +86,7 @@ class UpdateOrder(BaseModel):
     is_paid: bool | None = None
 
 class UpdateOrderStatus(BaseModel):
-    status: str | None = None,
+    status: str | None = None
     is_paid: bool | None = None
 
 

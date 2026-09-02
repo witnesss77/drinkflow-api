@@ -13,13 +13,12 @@ router = APIRouter(prefix = "/orders")
 @router.get("")
 async def get_orders(
     page: int | None = None,
-    user_id: int | None = None,
     warehouse_id: int | None = None,
     status: str | None = None,
     is_paid: bool | None = None,
-    service = Depends(get_order_service)):
+    service = Depends(get_order_service), user = Depends(get_current_user)):
 
-    return await service.get_orders(page, user_id, warehouse_id, status, is_paid)
+    return await service.get_orders(user, page, warehouse_id, status, is_paid)
     
 
 @router.post("", status_code = status.HTTP_201_CREATED)
@@ -27,8 +26,8 @@ async def set_orders(payload: CreateOrder, request: Request, service = Depends(g
     return await service.set_order(payload, request, user_id = int(user['id']))
 
 @router.patch("/{order_id:int}/payment")
-async def update_order(order_id, service = Depends(get_order_service)):
-    return await service.update_order_payment(order_id)
+async def update_order(order_id, service = Depends(get_order_service), user = Depends(get_current_user)):
+    return await service.update_order_payment(order_id, user)
 
 @router.patch("/{order_id:int}/change_status")
 async def update_order_status(request: UpdateOrderStatus, order_id,service = Depends(get_order_service), user = Depends(admin_check)):
@@ -46,9 +45,10 @@ async def get_items(
     drink_id: int | None = None,
     quantity: int | None = None,
     pricier: int | None = None,
-    service = Depends(get_order_service)):
+    service = Depends(get_order_service), 
+    user = Depends(get_current_user)):
 
-    return await service.get_items(order_id, user_id, drink_id, quantity, pricier)
+    return await service.get_items(order_id, user_id, drink_id, quantity, pricier, user)
 
 @router.post("/order_items")
 async def set_items(request: Request, payload: CreateOrderItem, db = Depends(get_session), id_ = Depends(admin_check)):
