@@ -26,8 +26,8 @@ async def set_orders(payload: CreateOrder, request: Request, service = Depends(g
     return await service.set_order(payload, request, user_id = int(user['id']))
 
 @router.patch("/{order_id:int}/payment")
-async def update_order(order_id, service = Depends(get_order_service), user = Depends(get_current_user)):
-    return await service.update_order_payment(order_id, user)
+async def update_order(order_id, service = Depends(get_order_service), user = Depends(get_current_user), db = Depends(get_session)):
+    return await service.update_order_payment(order_id, db, user)
 
 @router.patch("/{order_id:int}/change_status")
 async def update_order_status(request: UpdateOrderStatus, order_id,service = Depends(get_order_service), user = Depends(admin_check)):

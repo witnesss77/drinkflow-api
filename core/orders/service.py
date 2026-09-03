@@ -1,7 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from fastapi import HTTPException, status, Depends
-from core.auth.router import get_current_user
+from fastapi import HTTPException, status
 from core.models.schemas import OrderSchema
 from core.messages.producer import OrderProducer
 from core.models.models import User, Stock, Order, OrderItem, Drink, Warehouse
@@ -30,14 +29,9 @@ class OrderLogicService:
         if order is None:
             raise HTTPException(status_code=404, detail="Order not found")
         
-        query = select(Warehouse).where(Warehouse.id == Order.warehouse_id)
-        result = await db.execute(query)
-        warehouse = result.scalars().all()
-
-        warehouse = warehouse[0]
 
         stock_query = select(Stock).where(
-            Stock.warehouse_id == warehouse.id,
+            Stock.warehouse_id == order.warehouse_id,
             Stock.drink_id == payload.drink_id
         ).with_for_update()
 
@@ -92,12 +86,12 @@ class OrderLogicService:
             res = await db.execute(query)
             stock = res.scalar_one_or_none()
             if stock.drink_id == item.drink_id:
-            #1 - вернуть в колво стока колво указанное в заказе
                 stock.reserved_quantity -= item.quantity
                 stock.quantity += item.quantity
-            #2 - удалить ордер айтем
                 await db.delete(item)
-
+                
+        order.item_count = 0
+        order.total_price = 0
         order.status = "cancelled"
         await db.commit()
         return status.HTTP_200_OK
@@ -240,6 +234,7 @@ class OrderService:
         return await self.repository.get_items(user, order_id, drink_id, quantity, pricier)
 
     async def delete_item(self, item_id, request, db):
+        item = await self.repository.get_item_by_id(item_id)
         query  = select(Order).where(Order.id == item.order_id)
         result = await db.execute(query)
         order = result.scalar_one_or_none()
@@ -248,7 +243,6 @@ class OrderService:
             raise HTTPException(409, "Order can no longer be modified")
         
         await self.redis.delete_by_pattern(f"{self.key}:*")
-        item = await self.repository.get_item_by_id(item_id)
 
         producer = OrderProducer(request.app.state.orders_exchange)
         await producer.deleted_order_item(item.order_id)
