@@ -96,6 +96,13 @@ class OrderLogicService:
         return status.HTTP_200_OK
     
     async def remove_item(item_id, request, db):
+        query = select(OrderItem).where(OrderItem.id == item_id)
+        result = await db.execute(query)
+        item_ = result.scalar_one_or_none()
+
+        if not item_:
+            raise HTTPException(status_code=409, detail="orderitem doesn't exist")
+        
         query  = select(Order).where(Order.id == item.order_id).with_for_update()
         result = await db.execute(query)
         order = result.scalar_one_or_none()
@@ -104,8 +111,6 @@ class OrderLogicService:
         result = await db.execute(query)
         item = result.scalar_one_or_none()
 
-        if not item:
-            raise HTTPException(status_code=409, detail="orderitem doesn't exist")
         if not order:
             raise HTTPException(status_code=409, detail="order doesn't exist")
         
@@ -131,6 +136,9 @@ class OrderLogicService:
         query = select(OrderItem).where(OrderItem.id == item_id)
         result = await db.execute(query)
         item = result.scalar_one_or_none()
+        if item is None:
+            raise HTTPException(404, "OrderItem not found")
+        
         if item.user_id != int(user["id"]):
             raise HTTPException(status_code=403)
 
