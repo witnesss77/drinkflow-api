@@ -14,7 +14,7 @@ class StocksRepository:
         return result.scalars().all()
 
     async def set_stocks(self, request):
-        stmt = select(Stock).where(Stock.drink_id == request.drink_id)
+        stmt = select(Stock).where(Stock.drink_id == request.drink_id, Stock.warehouse_id == request.warehouse_id)
         query = await self.db.execute(stmt)
         res = query.scalars().all()
         if len(res) > 0:

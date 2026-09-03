@@ -259,9 +259,9 @@ class OrderService:
         await self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.update_order_payment(order_id, user)
 
-    async def update_order_status(self, request, order_id, requested_user):
+    async def update_order_status(self, request, order_id):
         await self.redis.delete_by_pattern(f"{self.key}:*")
-        return await self.repository.update_order_status(request, order_id, requested_user)
+        return await self.repository.update_order_status(request, order_id)
 
     async def get_items(self, order_id, drink_id,quantity,pricier, user):
         return await self.repository.get_items(user, order_id, drink_id, quantity, pricier)

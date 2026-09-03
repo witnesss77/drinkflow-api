@@ -4,8 +4,9 @@ import json
 
 
 async def publish_json(exchange: AbstractExchange, routing_key: str, data: dict):
-    message = aio_pika.Message(json.dumps(data).encode())
+    message = aio_pika.Message(json.dumps(data).encode(), delivery_mode=aio_pika.DeliveryMode.PERSISTENT)
     await exchange.publish(message, routing_key)
+
 
 class OrderProducer:
     def __init__(self, exchange):

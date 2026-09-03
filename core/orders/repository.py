@@ -88,7 +88,7 @@ class OrdersRepository:
         await self.db.refresh(order)
         return order
 
-    async def update_order_status(self, request, order_id, requested_user):
+    async def update_order_status(self, request, order_id):
         query = select(Order).where(Order.id == order_id).with_for_update()
         result = await self.db.execute(query)
         order = result.scalar_one_or_none()
