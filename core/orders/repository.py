@@ -76,8 +76,10 @@ class OrdersRepository:
         if not items:
             raise HTTPException(status_code=409, detail="order is empty")
         
-        if order.is_paid or order.status != "paid":
-            raise HTTPException(status_code=409, detail="order cannot be paid")
+        if order.is_paid or order.status != "created":
+            raise HTTPException(
+                status_code=409,
+                detail="Order can no longer be paid")
             
         order.is_paid = True
         order.status = "paid"

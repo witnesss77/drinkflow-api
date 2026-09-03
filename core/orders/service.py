@@ -96,20 +96,23 @@ class OrderLogicService:
         return status.HTTP_200_OK
     
     async def remove_item(item_id, request, db):
-        query = select(OrderItem).where(OrderItem.id == item_id)
-        result = await db.execute(query)
-        item_ = result.scalar_one_or_none()
+        order_id = await db.scalar(
+            select(OrderItem.order_id)
+            .where(OrderItem.id == item_id)
+        )
 
-        if not item_:
-            raise HTTPException(status_code=409, detail="orderitem doesn't exist")
-        
-        query  = select(Order).where(Order.id == item.order_id).with_for_update()
-        result = await db.execute(query)
-        order = result.scalar_one_or_none()
+        if order_id is None:
+            raise HTTPException(status_code=404, detail="OrderItem not found")
 
-        query = select(OrderItem).where(OrderItem.id == item_id)
-        result = await db.execute(query)
-        item = result.scalar_one_or_none()
+        order = await db.scalar(
+            select(Order)
+            .where(Order.id == order_id)
+            .with_for_update()
+        )
+
+        item = await db.scalar(
+        select(OrderItem)
+        .where(OrderItem.id == item_id))
 
         if not order:
             raise HTTPException(status_code=409, detail="order doesn't exist")
@@ -133,9 +136,25 @@ class OrderLogicService:
         return "done"
     
     async def change_quantity(item_id, payload, request, db, user):
-        query = select(OrderItem).where(OrderItem.id == item_id)
-        result = await db.execute(query)
-        item = result.scalar_one_or_none()
+        order_id = await db.scalar(
+            select(OrderItem.order_id)
+            .where(OrderItem.id == item_id)
+        )
+
+        if order_id is None:
+            raise HTTPException(404, "OrderItem not found")
+
+        order = await db.scalar(
+            select(Order)
+            .where(Order.id == order_id)
+            .with_for_update()
+            )           
+
+        item = await db.scalar(
+            select(OrderItem)
+            .where(OrderItem.id == item_id)
+        )
+
         if item is None:
             raise HTTPException(404, "OrderItem not found")
         
