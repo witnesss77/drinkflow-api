@@ -24,6 +24,9 @@ class OrderLogicService:
         result = await db.execute(query)
         order = result.scalar_one_or_none()
 
+        if order.is_paid or order.status != "created":
+            raise HTTPException(409, "Order can no longer be modified")
+
         if order is None:
             raise HTTPException(status_code=404, detail="Order not found")
         
@@ -110,6 +113,8 @@ class OrderLogicService:
         query  = select(Order).where(Order.id == item.order_id)
         result = await db.execute(query)
         order = result.scalar_one_or_none()
+        if order.is_paid or order.status != "created":
+            raise HTTPException(409, "Order can no longer be modified")
 
         query = select(Stock).where(
         item.drink_id == Stock.drink_id, Stock.warehouse_id == order.warehouse_id
@@ -126,14 +131,18 @@ class OrderLogicService:
         
         return "done"
     
-    async def change_quantity(item_id, payload, request, db):
+    async def change_quantity(item_id, payload, request, db, user):
         query = select(OrderItem).where(OrderItem.id == item_id)
         result = await db.execute(query)
         item = result.scalar_one_or_none()
+        if item.user_id != int(user["id"]):
+            raise HTTPException(status_code=403)
 
         query  = select(Order).where(Order.id == item.order_id)
         result = await db.execute(query)
         order = result.scalar_one_or_none()
+        if order.is_paid or order.status != "created":
+            raise HTTPException(409, "Order can no longer be modified")
 
         query = select(Stock).where(
         Stock.drink_id == item.drink_id, Stock.warehouse_id == order.warehouse_id
@@ -213,7 +222,13 @@ class OrderService:
 
         return order
 
-    async def update_order_payment(self, order_id, user):
+    async def update_order_payment(self, order_id, db, user):
+        query = select(Order).where(Order.id == order_id)   
+        res = await db.execute(query)
+        order = res.scalar_one_or_none()
+
+        if order.is_paid or order.status != "created":
+            raise HTTPException(409, "Order can no longer be modified")
         await self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.update_order_payment(order_id, user)
 
@@ -224,7 +239,14 @@ class OrderService:
     async def get_items(self, order_id, drink_id,quantity,pricier, user):
         return await self.repository.get_items(user, order_id, drink_id, quantity, pricier)
 
-    async def delete_item(self, item_id, request):
+    async def delete_item(self, item_id, request, db):
+        query  = select(Order).where(Order.id == item.order_id)
+        result = await db.execute(query)
+        order = result.scalar_one_or_none()
+                
+        if order.is_paid or order.status != "created":
+            raise HTTPException(409, "Order can no longer be modified")
+        
         await self.redis.delete_by_pattern(f"{self.key}:*")
         item = await self.repository.get_item_by_id(item_id)
 

@@ -66,7 +66,7 @@ async def update_items(item_id, payload: UpdateOrderItem, request: Request, db =
                 detail="Item not found"
             )
 
-    return await OrderLogicService.change_quantity(item_id, payload, request, db)
+    return await OrderLogicService.change_quantity(item_id, payload, request, db, user)
 
 
 @router.delete("/order_items/{item_id:int}")
