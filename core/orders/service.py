@@ -111,9 +111,11 @@ class OrderLogicService:
         )
 
         item = await db.scalar(
-        select(OrderItem)
-        .where(OrderItem.id == item_id))
-
+            select(OrderItem)
+            .where(OrderItem.id == item_id))
+        if item is None:
+            raise HTTPException(404, "OrderItem not found")
+        
         if not order:
             raise HTTPException(status_code=409, detail="order doesn't exist")
         
@@ -161,9 +163,7 @@ class OrderLogicService:
         if item.user_id != int(user["id"]):
             raise HTTPException(status_code=403)
 
-        query  = select(Order).where(Order.id == item.order_id).with_for_update()
-        result = await db.execute(query)
-        order = result.scalar_one_or_none()
+        
         if order.is_paid or order.status != "created":
             raise HTTPException(409, "Order can no longer be modified")
 
