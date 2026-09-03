@@ -96,16 +96,19 @@ class OrderLogicService:
         return status.HTTP_200_OK
     
     async def remove_item(item_id, request, db):
+        query  = select(Order).where(Order.id == item.order_id).with_for_update()
+        result = await db.execute(query)
+        order = result.scalar_one_or_none()
+
         query = select(OrderItem).where(OrderItem.id == item_id)
         result = await db.execute(query)
         item = result.scalar_one_or_none()
 
         if not item:
             raise HTTPException(status_code=409, detail="orderitem doesn't exist")
-
-        query  = select(Order).where(Order.id == item.order_id).with_for_update()
-        result = await db.execute(query)
-        order = result.scalar_one_or_none()
+        if not order:
+            raise HTTPException(status_code=409, detail="order doesn't exist")
+        
         if order.is_paid or order.status != "created":
             raise HTTPException(409, "Order can no longer be modified")
 

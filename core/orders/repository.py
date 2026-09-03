@@ -94,7 +94,7 @@ class OrdersRepository:
         if res is None:
             raise HTTPException(status_code=403, detail="role is not allowed")
             
-        query = select(Order).where(Order.id == order_id)
+        query = select(Order).where(Order.id == order_id).with_for_update()
         result = await self.db.execute(query)
         order = result.scalar_one_or_none()
 
