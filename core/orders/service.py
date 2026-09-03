@@ -23,12 +23,11 @@ class OrderLogicService:
         result = await db.execute(query)
         order = result.scalar_one_or_none()
 
+        if order is None:
+            raise HTTPException(status_code=404, detail="Order not found")
         if order.is_paid or order.status != "created":
             raise HTTPException(409, "Order can no longer be modified")
 
-        if order is None:
-            raise HTTPException(status_code=404, detail="Order not found")
-        
 
         stock_query = select(Stock).where(
             Stock.warehouse_id == order.warehouse_id,
@@ -221,8 +220,12 @@ class OrderService:
         res = await db.execute(query)
         order = res.scalar_one_or_none()
 
+        if order is None:
+            raise HTTPException(404, "Order not found")
+
         if order.is_paid or order.status != "created":
             raise HTTPException(409, "Order can no longer be modified")
+        
         await self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.update_order_payment(order_id, user)
 

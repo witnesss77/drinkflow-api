@@ -62,7 +62,7 @@ class OrdersRepository:
         return result.scalar_one_or_none()
 
     async def update_order_payment(self, order_id, user):
-        query = select(Order).where(Order.id == order_id, int(user['id']) == Order.user_id)
+        query = select(Order).where(Order.id == order_id, int(user['id']) == Order.user_id).with_for_update()
         result = await self.db.execute(query)
         order = result.scalar_one_or_none()
 
@@ -75,7 +75,7 @@ class OrdersRepository:
         
         if not items:
             raise HTTPException(status_code=409, detail="order is empty")
-            
+        
         if order.is_paid == True or order.status == "paid":
             raise HTTPException(status_code=409, detail="order is already paid")
             
