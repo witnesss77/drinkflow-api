@@ -19,7 +19,7 @@ class OrderLogicService:
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
-        query = select(Order).where(Order.id == payload.order_id, Order.user_id == int(id_['id']))
+        query = select(Order).where(Order.id == payload.order_id, Order.user_id == int(id_['id'])).with_for_update()
         result = await db.execute(query)
         order = result.scalar_one_or_none()
 
@@ -67,7 +67,7 @@ class OrderLogicService:
     
 
     async def cancel_order(order_id, db):
-        query = select(Order).where(Order.id == order_id)
+        query = select(Order).where(Order.id == order_id).with_for_update()
         result = await db.execute(query)
         order = result.scalar_one_or_none()
 
@@ -103,7 +103,7 @@ class OrderLogicService:
         if not item:
             raise HTTPException(status_code=409, detail="orderitem doesn't exist")
 
-        query  = select(Order).where(Order.id == item.order_id)
+        query  = select(Order).where(Order.id == item.order_id).with_for_update()
         result = await db.execute(query)
         order = result.scalar_one_or_none()
         if order.is_paid or order.status != "created":
@@ -131,7 +131,7 @@ class OrderLogicService:
         if item.user_id != int(user["id"]):
             raise HTTPException(status_code=403)
 
-        query  = select(Order).where(Order.id == item.order_id)
+        query  = select(Order).where(Order.id == item.order_id).with_for_update()
         result = await db.execute(query)
         order = result.scalar_one_or_none()
         if order.is_paid or order.status != "created":
@@ -224,7 +224,7 @@ class OrderService:
             raise HTTPException(404, "Order not found")
 
         if order.is_paid or order.status != "created":
-            raise HTTPException(409, "Order can no longer be modified")
+            raise HTTPException(409, "Order can no longer be paid")
         
         await self.redis.delete_by_pattern(f"{self.key}:*")
         return await self.repository.update_order_payment(order_id, user)

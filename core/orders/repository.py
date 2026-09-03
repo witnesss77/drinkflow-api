@@ -97,16 +97,14 @@ class OrdersRepository:
         query = select(Order).where(Order.id == order_id)
         result = await self.db.execute(query)
         order = result.scalar_one_or_none()
+
+        if order is None:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
         query2 = select(OrderItem).where(OrderItem.order_id == order.id)
         result2 = await self.db.execute(query2)
         items = result2.scalars().all()
         
-        if order is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Order not found"
-            )
-            
         if not items:
             raise HTTPException(status_code=409, detail="order is empty")
             
