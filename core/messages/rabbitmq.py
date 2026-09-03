@@ -11,7 +11,7 @@ async def connect_rabbitmq():
     return await aio_pika.connect_robust(rabbitmq_url)
 
 async def declare_exchange(channel: AbstractChannel, exchange):
-    return await channel.declare_exchange(exchange, aio_pika.ExchangeType.TOPIC)
+    return await channel.declare_exchange(exchange, aio_pika.ExchangeType.TOPIC, durable=True)
 
 async def declare_queue(channel: AbstractChannel, exchange: AbstractExchange, queue_param, routing):
     queue: AbstractQueue = await channel.declare_queue(queue_param, durable=True)

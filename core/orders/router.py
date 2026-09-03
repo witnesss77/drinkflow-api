@@ -31,7 +31,7 @@ async def update_order(order_id, service = Depends(get_order_service), user = De
 
 @router.patch("/{order_id:int}/change_status")
 async def update_order_status(request: UpdateOrderStatus, order_id,service = Depends(get_order_service), user = Depends(admin_check)):
-    return await service.update_order_status(request, order_id, user)
+    return await service.update_order_status(request, order_id)
 
 @router.delete("/{order_id:int}")
 async def delete_order(order_id, db = Depends(get_session), user = Depends(admin_check)):

@@ -17,7 +17,7 @@ services:
     command: >
       sh -c "alembic upgrade head && 
       uvicorn core.main:app --host 0.0.0.0 --port 8000"
-
+    restart: unless-stopped
   postgres:
     image: postgres:18.4
     environment:
@@ -57,6 +57,7 @@ services:
 
     command: 
       celery -A core.celery_worker worker --loglevel=info
+    restart: unless-stopped
 
   order_consumer:
     build: .
@@ -72,6 +73,6 @@ services:
 
     command: 
       python -m core.messages.order_consumer  
-
+    restart: unless-stopped
 volumes:
   postgres_data:
