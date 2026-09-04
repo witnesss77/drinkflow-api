@@ -57,7 +57,7 @@ services:
         condition: service_healthy
 
     command: 
-      celery -A core.celery_worker worker --loglevel=info
+      celery -A core.celery_worker worker --loglevel=info --without-mingle --concurrency=1
     restart: unless-stopped
 
   order_consumer:
