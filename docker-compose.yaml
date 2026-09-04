@@ -2,7 +2,7 @@ services:
   drinkflow:
     build: .
     ports:
-      - "8080:8000"
+      - "127.0.0.1:8000:8000"
 
     env_file:
     - ./core/.env
@@ -57,7 +57,7 @@ services:
         condition: service_healthy
 
     command: 
-      celery -A core.celery_worker worker --loglevel=info
+      celery -A core.celery_worker worker --loglevel=info --without-mingle --concurrency=1
     restart: unless-stopped
 
   order_consumer:
