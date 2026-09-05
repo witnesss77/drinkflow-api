@@ -13,3 +13,4 @@ DrinkFlow API — асинхронный REST API для управления н
 - PostgreSQL
 - Redis
 - RabbitMQ
+- Celery
